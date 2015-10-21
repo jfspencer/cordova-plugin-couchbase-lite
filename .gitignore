@@ -1,2 +1,4 @@
 .idea
 interfaces/cbl.js
+
+adapters/typescript/cbl.js
