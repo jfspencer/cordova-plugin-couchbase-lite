@@ -2,3 +2,5 @@
 interfaces/cbl.js
 
 adapters/typescript/cbl.js
+
+adapters/typescript/emitter.js

@@ -1,5 +1,7 @@
 ///<reference path="cbl.d.ts" />
 
+import Emitter = require('emitter');
+
 class cblDB {
 
     private serverUrl = '';
@@ -35,50 +37,66 @@ class cblDB {
         });
     }
 
-    get(docId:string, params?:Object) {
+    bulkDocs(docs:Array<cbl.IDoc>) {
         return new Promise((resolve, reject)=> {
-            this.processRequest('GET', this.dbUrl.directory(docId).toString(), null, null,
-                (err, doc)=> { if (err) reject(err); else resolve(doc); });
-        });
-    }
-
-    upsert(doc:cbl.cblDoc, params?:cbl.IPutDbDocParams) {
-        return new Promise((resolve, reject)=> {
-            var uri = this.dbUrl.directory(doc._id);
-            var headers = {'Content-Type': 'application/json'};
-            var requestParams:cbl.IPutDbDocParams = <cbl.IPutDbDocParams>{};
-            if (params) requestParams = <cbl.IPutDbDocParams>_.assign(requestParams, params);
-            if (doc._rev) {
-                requestParams.rev = doc._rev;
-                uri.search(requestParams);
-            }
-
-            this.processRequest('PUT', uri.toString(), doc, headers, (err, success)=> { if (err)reject(err); else resolve(success); })
-        });
-    }
-
-    bulkDocs(docs:Array<Object>, params?:Object) {
-        return new Promise((resolve, reject)=> {
-
-        });
-    }
-
-    query(view:string, params?:Object) {
-        return new Promise((resolve, reject)=> {
-            this.processRequest('PUT', this.dbName + '/' + view, null, null,
-                (err, response)=> { });
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var uri = this.dbUrl.directory('_bulk_docs');
+            this.processRequest('POST', uri.toString(), docs, headers, (err, success)=> { if (err)reject(err); else resolve(success); })
         });
     }
 
     changes() {
+        var http = new XMLHttpRequest();
+        var emitter = new Emitter();
+        var uri = this.dbUrl.directory('_changes');
+        http.onreadystatechange = () => {
+            if (http.readyState == 4 && http.status == 200) change(false, JSON.parse(http.responseText));
+            else error({status: http.status, response: http.responseText});
+        };
+
+        http.open(verb, uri.toString(), true);
+        if (verb === 'GET' || verb === 'DELETE')http.send();
+        else if (verb === 'POST' || verb === 'PUT')http.send(JSON.stringify(data));
+        return emitter;
+    }
+
+    destroy() {
         return new Promise((resolve, reject)=> {
 
+        });
+    }
+
+    get(docId:string, params?:cbl.IGetDbDocParams) {
+        return new Promise((resolve, reject)=> {
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var uri = this.dbUrl.directory(docId);
+            var requestParams:cbl.IGetDbDocParams = <cbl.IGetDbDocParams>{};
+            if (params) requestParams = <cbl.IGetDbDocParams>_.assign(requestParams, params);
+            this.processRequest('GET', uri.toString(), null, headers, (err, doc)=> { if (err) reject(err); else resolve(doc); });
         });
     }
 
     info() {
         return new Promise((resolve, reject)=> {
 
+        });
+    }
+
+    query(view:string, params:cbl.IGetPostDbDesignViewName) {
+        return new Promise((resolve, reject)=> {
+            var verb = 'GET';
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var viewParts = view.split('/');
+            var uri = this.dbUrl.directory('_design').directory(viewParts[0]).directory('_view').directory(viewParts[1]);
+            var requestParams:cbl.IGetPostDbDesignViewName = <cbl.IGetPostDbDesignViewName>{};
+            if (params.keys) {
+                verb = 'POST';
+                requestParams.keys = params.keys;
+            }
+            else requestParams = <cbl.IGetPostDbDesignViewName>_.assign(requestParams, params);
+            uri.search(requestParams);
+
+            this.processRequest(verb, uri.toString(), null, headers, (err, response)=> {if (err)reject(err); else resolve(response); });
         });
     }
 
@@ -90,15 +108,23 @@ class cblDB {
 
     }
 
-    destroy() {
+    upsert(doc:cbl.IDoc, params?:cbl.IPutDbDocParams) {
         return new Promise((resolve, reject)=> {
-
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var uri = this.dbUrl.directory(doc._id);
+            var requestParams:cbl.IPutDbDocParams = <cbl.IPutDbDocParams>{};
+            if (params) requestParams = <cbl.IPutDbDocParams>_.assign(requestParams, params);
+            if (doc._rev) {
+                requestParams.rev = doc._rev;
+                uri.search(requestParams);
+            }
+            this.processRequest('PUT', uri.toString(), doc, headers, (err, success)=> { if (err)reject(err); else resolve(success); })
         });
     }
 
     private processRequest(verb:string, url:string, data:Object, headers:Object, cb:Function):void {
         var http = new XMLHttpRequest();
-        _.forOwn(headers, (value, key)=> { http.setRequestHeader(key, value); });
+        if (headers) _.forOwn(headers, (value, key)=> { http.setRequestHeader(key, value); });
 
         http.onreadystatechange = () => {
             if (http.readyState == 4 && http.status == 200) cb(false, JSON.parse(http.responseText));
