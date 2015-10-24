@@ -75,7 +75,6 @@
         <framework src="com.fasterxml.jackson.core:jackson-annotations:2.5.3"/>
         <framework src="com.fasterxml.jackson.core:jackson-core:2.5.3"/>
         <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
-        <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
         <framework src="org.mozilla:rhino:1.7R3"/>
         <framework src="com.github.oxo42:stateless4j:2.4.0"/>
     </platform>
