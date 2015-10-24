@@ -50,13 +50,13 @@ class cblDB {
         var emitter = new Emitter();
         var uri = this.dbUrl.directory('_changes');
         http.onreadystatechange = () => {
-            if (http.readyState == 4 && http.status == 200) change(false, JSON.parse(http.responseText));
-            else error({status: http.status, response: http.responseText});
+            //if (http.readyState == 4 && http.status == 200) change(false, JSON.parse(http.responseText));
+            //else error({status: http.status, response: http.responseText});
         };
 
-        http.open(verb, uri.toString(), true);
-        if (verb === 'GET' || verb === 'DELETE')http.send();
-        else if (verb === 'POST' || verb === 'PUT')http.send(JSON.stringify(data));
+        //http.open(verb, uri.toString(), true);
+        //if (verb === 'GET' || verb === 'DELETE')http.send();
+        //else if (verb === 'POST' || verb === 'PUT')http.send(JSON.stringify(data));
         return emitter;
     }
 
