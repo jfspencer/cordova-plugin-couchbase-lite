@@ -70,13 +70,13 @@
         <source-file src="lib/android/webserver-2-3.jar" target-dir="libs"/>
         <source-file src="lib/android/couchbase-lite-java-javascript-1.1.0.jar" target-dir="libs"/>
         <source-file src="lib/android/couchbase-lite-java-listener-1.1.0.jar" target-dir="libs"/>
-        <framework src="com.couchbase.lite:couchbase-lite-android:1.1.0" target-dir="libs"/>
-        <framework src="com.couchbase.lite:lite-java-core:1.1.0" target-dir="libs"/>
-        <framework src="com.fasterxml.jackson.core:jackson-annotations:2.5.3" target-dir="libs"/>
-        <framework src="com.fasterxml.jackson.core:jackson-core:2.5.3" target-dir="libs"/>
-        <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3" target-dir="libs"/>
-        <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3" target-dir="libs"/>
-        <framework src="org.mozilla:rhino:1.7R3" target-dir="libs"/>
-        <framework src="com.github.oxo42:stateless4j:2.4.0" target-dir="libs"/>
+        <framework src="com.couchbase.lite:couchbase-lite-android:1.1.0"/>
+        <framework src="com.couchbase.lite:lite-java-core:1.1.0"/>
+        <framework src="com.fasterxml.jackson.core:jackson-annotations:2.5.3"/>
+        <framework src="com.fasterxml.jackson.core:jackson-core:2.5.3"/>
+        <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
+        <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
+        <framework src="org.mozilla:rhino:1.7R3"/>
+        <framework src="com.github.oxo42:stateless4j:2.4.0"/>
     </platform>
 </plugin>
