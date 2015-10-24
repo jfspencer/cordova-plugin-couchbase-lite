@@ -1,0 +1,5 @@
+android {
+    packagingOptions {
+        exclude 'lib/arm64-v8a/libcom_couchbase_touchdb_RevCollator.so'
+    }
+}
