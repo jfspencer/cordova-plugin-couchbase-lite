@@ -69,9 +69,9 @@
     <source-file src="lib/android/couchbase-lite-java-core-1.1.0.jar" target-dir="libs"/>
     <source-file src="lib/android/couchbase-lite-java-javascript-1.1.0.jar" target-dir="libs"/>
     <source-file src="lib/android/couchbase-lite-java-listener-1.1.0.jar" target-dir="libs"/>
-    <source-file src="lib/android/jackson-annotations-2.5.0.jar" target-dir="libs"/>
-    <source-file src="lib/android/jackson-core-2.5.0.jar" target-dir="libs"/>
-    <source-file src="lib/android/jackson-databind-2.5.0.jar" target-dir="libs"/>
+    <source-file src="lib/android/jackson-annotations-2.5.3.jar" target-dir="libs"/>
+    <source-file src="lib/android/jackson-core-2.5.3.jar" target-dir="libs"/>
+    <source-file src="lib/android/jackson-databind-2.5.3.jar" target-dir="libs"/>
     <source-file src="lib/android/rhino-1.7R3.jar" target-dir="libs"/>
     <source-file src="lib/android/servlet-2-3.jar" target-dir="libs"/>
     <source-file src="lib/android/stateless4j-2.4.0.jar" target-dir="libs"/>
