@@ -52,8 +52,8 @@
         <framework src="JavaScriptCore.framework"/>
         <header-file src="lib/ios/CBLRegisterJSViewCompiler.h"/>
         <source-file framework="true" src="lib/ios/libCBLJSViewCompiler.a"/>
-        <source-file framework="true" src="lib/ios/CouchbaseLite.framework/CouchbaseLite.a"/>
-        <source-file framework="true" src="lib/ios/CouchbaseLiteListener.framework/CouchbaseLiteListener.a"/>
+        <source-file framework="true" src="lib/ios/CouchbaseLite.framework/CouchbaseLite"/>
+        <source-file framework="true" src="lib/ios/CouchbaseLiteListener.framework/CouchbaseLiteListener"/>
         <header-file src="lib/ios/CouchbaseLite.framework/Headers/CBLAttachment.h"/>
         <header-file src="lib/ios/CouchbaseLite.framework/Headers/CBLAuthenticator.h"/>
         <header-file src="lib/ios/CouchbaseLite.framework/Headers/CBLBase.h"/>
