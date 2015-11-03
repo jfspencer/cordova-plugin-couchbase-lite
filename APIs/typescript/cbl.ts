@@ -9,12 +9,12 @@ class cblDB {
     private autoCompaction = false;
     private dbUrl:string = '';
     replicate = {
-        to:this.replicateTo,
-        from:this.replicateFrom
+        to: this.replicateTo,
+        from: this.replicateFrom
     };
 
     constructor(dbName:string, isAutoCompact?:boolean) {
-        if(_.isBoolean(isAutoCompact)) this.autoCompaction = isAutoCompact;
+        if (_.isBoolean(isAutoCompact)) this.autoCompaction = isAutoCompact;
         this.dbName = dbName.replace(/[^a-z0-9$_()+-/]/g, '');
 
         this.replicate = {
@@ -32,22 +32,22 @@ class cblDB {
                     this.dbUrl = new URI(this.serverUrl).directory(this.dbName).toString();
                     this.processRequest('PUT', this.dbUrl.toString(), null, null,
                         (err, response)=> {
-                            if (err) reject(cblDB.buildError('Error From DB PUT Request',err));
+                            if (err) reject(cblDB.buildError('Error From DB PUT Request', err));
                             else if (response.ok) resolve(true);
                             else if (response.status = 412) resolve(true);
-                            else reject( cblDB.buildError('Error From DB PUT Request',response));
+                            else reject(cblDB.buildError('Error From DB PUT Request', response));
                         });
                 },
                 (err)=> {throw new Error(err); });
         });
     }
 
-    allDocs(params:cbl.IGetAllDocsParams & cbl.IPostAllDocsParams){
-        return new Promise((resolve, reject)=>{
+    allDocs(params:cbl.IAllDocsParams) {
+        return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl);
             var verb = 'GET';
             var requestParams:cbl.IGetPostDbDesignViewName = <cbl.IGetPostDbDesignViewName>{};
-            if(_.isArray(params.keys)){
+            if (_.isArray(params.keys)) {
                 verb = 'POST';
                 requestParams.keys = params.keys;
             }
@@ -56,7 +56,7 @@ class cblDB {
 
             this.processRequest(verb, uri.toString(), null, null,
                 (err, success)=> {
-                    if (err) reject(cblDB.buildError('Error From allDocs Request',err));
+                    if (err) reject(cblDB.buildError('Error From allDocs Request', err));
                     else resolve(success);
                 });
         });
@@ -69,13 +69,13 @@ class cblDB {
             uri.segment('_bulk_docs');
             this.processRequest('POST', uri.toString(), docs, headers,
                 (err, success)=> {
-                    if (err) reject(cblDB.buildError('Error From bulkDocs Request',err));
+                    if (err) reject(cblDB.buildError('Error From bulkDocs Request', err));
                     else resolve(success);
                 })
         });
     }
 
-    changes() {
+    changes(params:cbl.IGetDbChangesParams) {
         var http = new XMLHttpRequest();
         var emitter = new Emitter();
         var uri = new URI(this.dbUrl);
@@ -91,13 +91,26 @@ class cblDB {
         return emitter;
     }
 
-    compact(){
-
+    compact() {
+        return new Promise((resolve, reject)=> {
+            var uri = new URI(this.dbUrl);
+            uri.segment('_compact');
+            this.processRequest('POST', uri.toString(), null, null,
+                (err, success)=> {
+                    if (err) reject(cblDB.buildError('Error From bulkDocs Request', err));
+                    else resolve(success);
+                });
+        });
     }
 
     destroy() {
         return new Promise((resolve, reject)=> {
-
+            var uri = new URI(this.dbUrl);
+            this.processRequest('DELETE', uri.toString(), null, null,
+                (err, success)=> {
+                    if (err) reject(cblDB.buildError('Error From bulkDocs Request', err));
+                    else resolve(success);
+                });
         });
     }
 
@@ -107,43 +120,80 @@ class cblDB {
             var uri = new URI(this.dbUrl);
             uri.segment(docId);
             var requestParams:cbl.IGetDbDocParams = <cbl.IGetDbDocParams>{};
-            if (params) requestParams = <cbl.IGetDbDocParams>_.assign(requestParams, params);
+            if (params) {
+                requestParams = <cbl.IGetDbDocParams>_.assign(requestParams, params);
+                uri.search(requestParams);
+            }
             this.processRequest('GET', uri.toString(), null, headers,
                 (err, doc)=> {
-                    if (err) reject(cblDB.buildError('Error From GET Request',err));
+                    if (err) reject(cblDB.buildError('Error From GET Request', err));
                     else resolve(doc);
                 });
         });
     }
 
-    getAttachment(){
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
-    }
-
-    info() {
-        //use allDocs to get doc count for the db
+    getAttachment(docId:string, attachmentName:string, rev?:string) {
         return new Promise((resolve, reject)=> {
+            var uri:uri.URI = new URI(this.dbUrl);
+            uri.segment(docId).segment(attachmentName);
+            if (_.isString(rev)) uri.search({rev: rev});
 
+            this.processRequest('GET', uri.toString(), null, null,
+                (err, success)=> {
+                    if (err) reject(cblDB.buildError('Error From bulkDocs Request', err));
+                    else resolve(success);
+                });
         });
     }
 
-    post () {
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
+    info() {
+        //use allDocs to get doc count and sequence number and db ame for the db
+        return new Promise((resolve, reject)=> {
+            this.allDocs({update_seq: true})
+                .then((info:cbl.IAllDocsResponse)=> {
+                    resolve({'db_name': this.dbName, 'doc_count': info.total_rows, 'update_seq': info.update_seq})
+                })
+                .catch((err)=> {if (err) reject(cblDB.buildError('Error From info Request', err));})
+        });
+    }
+
+    post(doc:cbl.IDoc, params:cbl.IPostDbDocParams) {
+        return new Promise((resolve, reject)=> {
+            var uri = new URI(this.dbUrl);
+            if (params.batch === 'ok') uri.search({batch: 'ok'});
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            this.processRequest('POST', uri.toString(), doc, headers,
+                (err, success)=> {
+                    if (err) reject(cblDB.buildError('Error From POST Doc Request', err));
+                    else resolve(success);
+                });
+        });
     }
 
 
-    put(){
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
+    put(doc:cbl.IDoc, params:cbl.IPutDbDocParams) {
+        return new Promise((resolve, reject)=> {
+            if (!doc._id) reject(cblDB.buildError('doc does not have _id for PUT request', doc));
+            var uri = new URI(this.dbUrl);
+            uri.segment(doc._id);
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var requestParams:cbl.IPutDbDocParams = <cbl.IPutDbDocParams>{};
+            if (params) {
+                requestParams = <cbl.IPutDbDocParams>_.assign(requestParams, params);
+                uri.search(requestParams);
+            }
+            this.processRequest('PUT', uri.toString(), doc, headers,
+                (err, success)=> {
+                    if (err) reject(cblDB.buildError('Error From PUT Request', err));
+                    else resolve(success);
+                });
+        });
     }
 
-    putAttachment(){
+    putAttachment(docId:string, attachmentId:string, attachment:any, type:string) {
+        return new Promise((resolve, reject)=> {
 
+        });
     }
 
     query(view:string, params:cbl.IGetPostDbDesignViewName) {
@@ -163,13 +213,13 @@ class cblDB {
 
             this.processRequest(verb, uri.toString(), null, headers,
                 (err, response)=> {
-                    if (err) reject(cblDB.buildError('Error From Query Request',err));
+                    if (err) reject(cblDB.buildError('Error From Query Request', err));
                     else resolve(response);
                 });
         });
     }
 
-    static replicate(){
+    static replicate() {
         /**
          * TODO: NEEDS IMPLEMENTATION
          */
@@ -188,16 +238,24 @@ class cblDB {
     }
 
     remove() {
+        return new Promise((resolve, reject)=> {
+
+        });
         /**
          * TODO: NEEDS IMPLEMENTATION
          */
     }
 
-    removeAttachment(){
+    removeAttachment() {
+        return new Promise((resolve, reject)=> {
 
+        });
     }
 
-    revsDiff(){
+    revsDiff() {
+        return new Promise((resolve, reject)=> {
+
+        });
         /**
          * TODO: NEEDS IMPLEMENTATION
          */
@@ -212,9 +270,10 @@ class cblDB {
     upsert(doc:cbl.IDoc, params?:cbl.IPutDbDocParams) {
         return new Promise((resolve, reject)=> {
             var put = (upsertDoc) => {
+                if (!upsertDoc._id) reject(cblDB.buildError('doc does not have _id for Upsert request', doc));
                 this.processRequest('PUT', uri.toString(), upsertDoc, headers,
                     (err, success)=> {
-                        if (err) reject(cblDB.buildError('Error From Upsert Request',err));
+                        if (err) reject(cblDB.buildError('Error From Upsert Request', err));
                         else resolve(success);
                     });
             };
@@ -223,7 +282,10 @@ class cblDB {
             var uri = new URI(this.dbUrl);
             uri.segment(doc._id);
             var requestParams:cbl.IPutDbDocParams = <cbl.IPutDbDocParams>{};
-            if (params) requestParams = <cbl.IPutDbDocParams>_.assign(requestParams, params);
+            if (params) {
+                requestParams = <cbl.IPutDbDocParams>_.assign(requestParams, params);
+                uri.search(requestParams);
+            }
 
             this.get(doc._id)
                 .then((dbDoc:cbl.IDoc)=> {
@@ -233,21 +295,24 @@ class cblDB {
                     put(doc);
                 })
                 .catch((error)=> {
-                    if(error.status === 404) put(doc);
+                    if (error.status === 404) put(doc);
                     else return error;
                 });
         });
     }
 
-    viewCleanup(){
+    viewCleanup() {
+        return new Promise((resolve, reject)=> {
+
+        });
         /**
          * TODO: NEEDS IMPLEMENTATION
          */
     }
 
-    private static buildError(msg:string, err){
+    private static buildError(msg:string, err) {
         var error:any = new Error(msg);
-        if(_.isObject(err))error = _.assign(error, err);
+        if (_.isObject(err))error = _.assign(error, err);
         else  error.errorValue = err;
         return error;
     }
@@ -263,7 +328,8 @@ class cblDB {
         };
 
         if (verb === 'GET' || verb === 'DELETE')http.send();
-        else if (verb === 'POST' || verb === 'PUT')http.send(JSON.stringify(data));
+        else if (verb === 'POST' || verb === 'PUT' && !_.isNull(data))http.send(JSON.stringify(data));
+        else http.send();
     }
 }
 
