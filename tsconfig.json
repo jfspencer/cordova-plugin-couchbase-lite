@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "amd",
+    "target": "es5",
+    "noImplicitAny": false,
+    "sourceMap": false,
+    "diagnostics": true
+  },
+  "exclude": [
+    ".idea",
+    "APIs/scalajs",
+    "lib",
+    "src",
+    "www"
+  ]
+}

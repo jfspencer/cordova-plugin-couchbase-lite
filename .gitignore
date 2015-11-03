@@ -1,6 +1,4 @@
 .idea
-interfaces/cbl.js
 
-adapters/typescript/cbl.js
-
-adapters/typescript/emitter.js
+/APIs/typescript/emitter.js
+/APIs/typescript/cbl.js
