@@ -6,7 +6,7 @@ class cblDB {
 
     private serverUrl = '';
     private dbName = '';
-    private dbUrl:uri.URI = null;
+    private dbUrl:string = '';
     replicate = null;
 
     constructor(dbName) {
@@ -23,7 +23,7 @@ class cblDB {
             cbl.getServerURL(
                 (url)=> {
                     this.serverUrl = url;
-                    this.dbUrl = new URI(this.serverUrl).directory(this.dbName);
+                    this.dbUrl = new URI(this.serverUrl).directory(this.dbName).toString();
                     this.processRequest('PUT', this.dbUrl.toString(), null, null,
                         (err, response)=> {
                             if (err) reject(cblDB.buildError('Error From DB PUT Request',err));
@@ -39,7 +39,8 @@ class cblDB {
     bulkDocs(docs:Array<cbl.IDoc>) {
         return new Promise((resolve, reject)=> {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            var uri = this.dbUrl.segment('_bulk_docs');
+            var uri = new URI(this.dbUrl);
+            uri.segment('_bulk_docs');
             this.processRequest('POST', uri.toString(), docs, headers,
                 (err, success)=> {
                     if (err) reject(cblDB.buildError('Error From bulkDocs Request',err));
@@ -51,7 +52,8 @@ class cblDB {
     changes() {
         var http = new XMLHttpRequest();
         var emitter = new Emitter();
-        var uri = this.dbUrl.segment('_changes');
+        var uri = new URI(this.dbUrl);
+        uri.segment('_changes');
         http.onreadystatechange = () => {
             //if (http.readyState == 4 && http.status == 200) change(false, JSON.parse(http.responseText));
             //else error({status: http.status, response: http.responseText});
@@ -72,7 +74,8 @@ class cblDB {
     get(docId:string, params?:cbl.IGetDbDocParams) {
         return new Promise((resolve, reject)=> {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            var uri = this.dbUrl.segment(docId);
+            var uri = new URI(this.dbUrl);
+            uri.segment(docId);
             var requestParams:cbl.IGetDbDocParams = <cbl.IGetDbDocParams>{};
             if (params) requestParams = <cbl.IGetDbDocParams>_.assign(requestParams, params);
             this.processRequest('GET', uri.toString(), null, headers,
@@ -94,7 +97,8 @@ class cblDB {
             var verb = 'GET';
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             var viewParts = view.split('/');
-            var uri = this.dbUrl.segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]);
+            var uri = new URI(this.dbUrl.toString());
+            uri.segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]);
             var requestParams:cbl.IGetPostDbDesignViewName = <cbl.IGetPostDbDesignViewName>{};
             if (params.keys) {
                 verb = 'POST';
@@ -126,11 +130,12 @@ class cblDB {
                     (err, success)=> {
                         if (err) reject(cblDB.buildError('Error From Upsert Request',err));
                         else resolve(success);
-                    })
+                    });
             };
 
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            var uri = this.dbUrl.segment(doc._id);
+            var uri = new URI(this.dbUrl);
+            uri.segment(doc._id);
             var requestParams:cbl.IPutDbDocParams = <cbl.IPutDbDocParams>{};
             if (params) requestParams = <cbl.IPutDbDocParams>_.assign(requestParams, params);
 
