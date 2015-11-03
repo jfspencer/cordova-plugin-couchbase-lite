@@ -12,7 +12,6 @@ declare module 'cbl' {
 
 declare module cbl {
     interface IStatic {
-
         getServerURL(success:(url:string) => void, error:(error:any) => void):void;
     }
 
@@ -20,6 +19,29 @@ declare module cbl {
         _id:string;
         _rev?:string;
         _deleted?:boolean;
+    }
+
+    interface IGetAllDocsParams {
+        conflicts:boolean; //Include conflict information in the response. This parameter is ignored if the include_docs parameter is false. default:false
+        descending:boolean; //Return documents in descending order	false
+        endkey:string; //If this parameter is provided, stop returning records when the specified key is reached.	none
+        end_key:string; //Alias for the endkey parameter	none
+        endkey_docid:string; //If this parameter is provided, stop returning records when the specified document identifier is reached	none
+        end_key_doc_id:string; //Alias for the endkey_docid parameter	none
+        include_docs:boolean; //Indicates whether to include the full content of the documents in the response	false
+        inclusive_end:boolean; //Indicates whether the specified end key should be included in the result	true
+        key:string;//If this parameter is provided, return only document that match the specified key.	none
+        limit:number; //If this parameter is provided, return only the specified number of documents	none
+        skip:number; //If this parameter is provided, skip the specified number of documents before starting to return results	0
+        stale:string; //Allow the results from a stale view to be used, without triggering a rebuild of all views within the encompassing design document. Valid values: ok and update_after.	none
+        startkey:string; //If this parameter is provided, return documents starting with the specified key.	none
+        start_key:string; //Alias for startkey param	none
+        startkey_docid:string; //If this parameter is provided, return documents starting with the specified document identifier.	none
+        update_seq:boolean; //Indicates whether to include the update_seq property in the response	false
+    }
+
+    interface IPostAllDocsParams {
+        keys:string[]; //List of identifiers of the documents to retrieve
     }
 
     interface IGetDbChangesParams {

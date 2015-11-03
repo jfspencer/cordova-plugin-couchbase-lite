@@ -42,10 +42,24 @@ class cblDB {
         });
     }
 
-    allDocs(){
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
+    allDocs(params:cbl.IGetAllDocsParams & cbl.IPostAllDocsParams){
+        return new Promise((resolve, reject)=>{
+            var uri = new URI(this.dbUrl);
+            var verb = 'GET';
+            var requestParams:cbl.IGetPostDbDesignViewName = <cbl.IGetPostDbDesignViewName>{};
+            if(_.isArray(params.keys)){
+                verb = 'POST';
+                requestParams.keys = params.keys;
+            }
+            else requestParams = <cbl.IGetPostDbDesignViewName>_.assign(requestParams, params);
+            uri.search(requestParams);
+
+            this.processRequest(verb, uri.toString(), null, null,
+                (err, success)=> {
+                    if (err) reject(cblDB.buildError('Error From allDocs Request',err));
+                    else resolve(success);
+                });
+        });
     }
 
     bulkDocs(docs:Array<cbl.IDoc>) {
@@ -89,7 +103,7 @@ class cblDB {
 
     get(docId:string, params?:cbl.IGetDbDocParams) {
         return new Promise((resolve, reject)=> {
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var headers:cbl.IHeaders = {'Accept': 'application/json'};
             var uri = new URI(this.dbUrl);
             uri.segment(docId);
             var requestParams:cbl.IGetDbDocParams = <cbl.IGetDbDocParams>{};
