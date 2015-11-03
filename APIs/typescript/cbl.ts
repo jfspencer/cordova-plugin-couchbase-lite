@@ -6,14 +6,17 @@ class cblDB {
 
     private serverUrl = '';
     private dbName = '';
+    private autoCompaction = false;
     private dbUrl:string = '';
     replicate = {
         to:this.replicateTo,
         from:this.replicateFrom
     };
 
-    constructor(dbName) {
+    constructor(dbName:string, isAutoCompact?:boolean) {
+        if(_.isBoolean(isAutoCompact)) this.autoCompaction = isAutoCompact;
         this.dbName = dbName.replace(/[^a-z0-9$_()+-/]/g, '');
+
         this.replicate = {
             from: this.replicateFrom,
             to: this.replicateTo
@@ -41,7 +44,7 @@ class cblDB {
 
     allDocs(){
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
@@ -101,7 +104,7 @@ class cblDB {
 
     getAttachment(){
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
@@ -114,14 +117,14 @@ class cblDB {
 
     post () {
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
 
     put(){
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
@@ -154,25 +157,25 @@ class cblDB {
 
     static replicate(){
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
     replicateFrom() {
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
     replicateTo() {
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
     remove() {
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
@@ -182,13 +185,13 @@ class cblDB {
 
     revsDiff(){
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
     static sync() {
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
@@ -224,7 +227,7 @@ class cblDB {
 
     viewCleanup(){
         /**
-         * NEEDS IMPLEMENTATION
+         * TODO: NEEDS IMPLEMENTATION
          */
     }
 
