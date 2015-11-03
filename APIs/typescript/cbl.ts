@@ -7,7 +7,10 @@ class cblDB {
     private serverUrl = '';
     private dbName = '';
     private dbUrl:string = '';
-    replicate = null;
+    replicate = {
+        to:this.replicateTo,
+        from:this.replicateFrom
+    };
 
     constructor(dbName) {
         this.dbName = dbName.replace(/[^a-z0-9$_()+-/]/g, '');
@@ -34,6 +37,12 @@ class cblDB {
                 },
                 (err)=> {throw new Error(err); });
         });
+    }
+
+    allDocs(){
+        /**
+         * NEEDS IMPLEMENTATION
+         */
     }
 
     bulkDocs(docs:Array<cbl.IDoc>) {
@@ -65,6 +74,10 @@ class cblDB {
         return emitter;
     }
 
+    compact(){
+
+    }
+
     destroy() {
         return new Promise((resolve, reject)=> {
 
@@ -86,10 +99,34 @@ class cblDB {
         });
     }
 
+    getAttachment(){
+        /**
+         * NEEDS IMPLEMENTATION
+         */
+    }
+
     info() {
+        //use allDocs to get doc count for the db
         return new Promise((resolve, reject)=> {
 
         });
+    }
+
+    post () {
+        /**
+         * NEEDS IMPLEMENTATION
+         */
+    }
+
+
+    put(){
+        /**
+         * NEEDS IMPLEMENTATION
+         */
+    }
+
+    putAttachment(){
+
     }
 
     query(view:string, params:cbl.IGetPostDbDesignViewName) {
@@ -115,12 +152,44 @@ class cblDB {
         });
     }
 
-    replicateFrom() {
+    static replicate(){
+        /**
+         * NEEDS IMPLEMENTATION
+         */
+    }
 
+    replicateFrom() {
+        /**
+         * NEEDS IMPLEMENTATION
+         */
     }
 
     replicateTo() {
+        /**
+         * NEEDS IMPLEMENTATION
+         */
+    }
 
+    remove() {
+        /**
+         * NEEDS IMPLEMENTATION
+         */
+    }
+
+    removeAttachment(){
+
+    }
+
+    revsDiff(){
+        /**
+         * NEEDS IMPLEMENTATION
+         */
+    }
+
+    static sync() {
+        /**
+         * NEEDS IMPLEMENTATION
+         */
     }
 
     upsert(doc:cbl.IDoc, params?:cbl.IPutDbDocParams) {
@@ -151,6 +220,12 @@ class cblDB {
                     else return error;
                 });
         });
+    }
+
+    viewCleanup(){
+        /**
+         * NEEDS IMPLEMENTATION
+         */
     }
 
     private static buildError(msg:string, err){
