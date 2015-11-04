@@ -1,6 +1,7 @@
 # Cordova-Plugin-Couchbase-Lite
 Couchbase Lite Cordova plugin that provides a
-full typescript and scalajs interfaces over CBL's REST API.
+full typescript and scalajs interfaces over CBL's REST API. This repo is intentionally not forked from the main
+[couchbase-lite-phonegap](https://github.com/couchbaselabs/Couchbase-Lite-PhoneGap-Plugin) repo. A seperate issue tracker is needed to track issues and progress with the typescript and scalajs interface code. This repo does not intend to provide improvements ahead of the main repository for the native code. This code will be manually updates as it is released from couchbase.
 
 API strictly follows [PouchDB](http://pouchdb.com/api.html)'s API,
  with the exceptions listed under [Differences Compared to PouchAPI](#quirks)
