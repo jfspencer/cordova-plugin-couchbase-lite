@@ -8,10 +8,7 @@ class cblDB {
     private dbName = '';
     private autoCompaction = false;
     private dbUrl:string = '';
-    replicate = {
-        to: this.replicateTo,
-        from: this.replicateFrom
-    };
+    replicate = null;
 
     constructor(dbName:string, isAutoCompact?:boolean) {
         if (_.isBoolean(isAutoCompact)) this.autoCompaction = isAutoCompact;
@@ -32,10 +29,10 @@ class cblDB {
                     this.dbUrl = new URI(this.serverUrl).directory(this.dbName).toString();
                     this.processRequest('PUT', this.dbUrl.toString(), null, null,
                         (err, response)=> {
-                            if (err) reject(cblDB.buildError('Error From DB PUT Request', err));
+                            if (response.status = 412) resolve(true);
                             else if (response.ok) resolve(true);
-                            else if (response.status = 412) resolve(true);
-                            else reject(cblDB.buildError('Error From DB PUT Request', response));
+                            else if (err) reject(cblDB.buildError('Error From DB PUT Request', err));
+                            else reject(cblDB.buildError('Unknown Error From DB PUT Request', response));
                         });
                 },
                 (err)=> {throw new Error(err); });
@@ -171,15 +168,15 @@ class cblDB {
     }
 
 
-    put(doc:cbl.IDoc, params:cbl.IPutDbDocParams) {
+    put(doc:cbl.IDoc, params:cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
             if (!doc._id) reject(cblDB.buildError('doc does not have _id for PUT request', doc));
             var uri = new URI(this.dbUrl);
             uri.segment(doc._id);
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            var requestParams:cbl.IPutDbDocParams = <cbl.IPutDbDocParams>{};
+            var requestParams:cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
             if (params) {
-                requestParams = <cbl.IPutDbDocParams>_.assign(requestParams, params);
+                requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
                 uri.search(requestParams);
             }
             this.processRequest('PUT', uri.toString(), doc, headers,
@@ -227,54 +224,63 @@ class cblDB {
     }
 
     static replicate() {
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
+        /** TODO: NEEDS IMPLEMENTATION */
     }
 
     replicateFrom() {
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
+        /** TODO: NEEDS IMPLEMENTATION */
     }
 
     replicateTo() {
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
+        /** TODO: NEEDS IMPLEMENTATION */
     }
 
-    remove() {
+    remove(doc:cbl.IDoc, params?:cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
+            var verb = 'DELETE';
+            var uri = new URI(this.dbUrl);
+            var requestParams:cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
+            if (params) requestParams = <cbl.IGetPostDbDesignViewName>_.assign(requestParams, params);
+            if(!params.rev) requestParams.rev = doc._rev;
+            uri.segment(doc._id);
+            uri.search(requestParams);
+
+            this.processRequest(verb, uri.toString(), null, null,
+                (err, response)=> {
+                    if (err) reject(cblDB.buildError('Error From remove Request', err));
+                    else resolve(response);
+                });
 
         });
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
     }
 
-    removeAttachment() {
+    removeAttachment(docId:string, attachmentId:string, rev:string) {
         return new Promise((resolve, reject)=> {
+            var verb = 'DELETE';
+            var uri = new URI(this.dbUrl);
+            uri.segment(docId).segment(attachmentId);
+            uri.search({rev:rev});
 
+            this.processRequest(verb, uri.toString(), null, null,
+                (err, response)=> {
+                    if (err) reject(cblDB.buildError('Error From remove Request', err));
+                    else resolve(response);
+                });
         });
     }
 
     revsDiff() {
         return new Promise((resolve, reject)=> {
-
+            reject(cblDB.buildError('revsDiff not implemented yet'));
+            /** TODO: NEEDS IMPLEMENTATION */
         });
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
     }
 
     static sync() {
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
+        /** TODO: NEEDS IMPLEMENTATION */
     }
 
-    upsert(doc:cbl.IDoc, params?:cbl.IPutDbDocParams) {
+    upsert(doc:cbl.IDoc, params?:cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
             var put = (upsertDoc) => {
                 if (!upsertDoc._id) reject(cblDB.buildError('doc does not have _id for Upsert request', doc));
@@ -288,9 +294,9 @@ class cblDB {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             var uri = new URI(this.dbUrl);
             uri.segment(doc._id);
-            var requestParams:cbl.IPutDbDocParams = <cbl.IPutDbDocParams>{};
+            var requestParams:cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
             if (params) {
-                requestParams = <cbl.IPutDbDocParams>_.assign(requestParams, params);
+                requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
                 uri.search(requestParams);
             }
 
@@ -310,17 +316,15 @@ class cblDB {
 
     viewCleanup() {
         return new Promise((resolve, reject)=> {
-
+            reject(cblDB.buildError('viewCleanup not implemented yet'));
+            /** TODO: NEEDS IMPLEMENTATION */
         });
-        /**
-         * TODO: NEEDS IMPLEMENTATION
-         */
     }
 
-    private static buildError(msg:string, err) {
+    private static buildError(msg:string, err?) {
         var error:any = new Error(msg);
         if (_.isObject(err))error = _.assign(error, err);
-        else  error.errorValue = err;
+        else if(err) error.errorValue = err;
         return error;
     }
 
