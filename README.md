@@ -1,6 +1,6 @@
 # Cordova-Plugin-Couchbase-Lite
 Couchbase Lite Cordova plugin that provides a
-full typescript and scalajs interface over CBL's REST API
+full typescript and scalajs interfaces over CBL's REST API.
 
 API strictly follows [PouchDB](http://pouchdb.com/api.html)'s API,
  with the exceptions listed under [Differences Compared to PouchAPI](#quirks)
