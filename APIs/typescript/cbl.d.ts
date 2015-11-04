@@ -125,6 +125,4 @@ declare module cbl {
         batch?:string; //Stores the document in batch mode. To use, set the value to 'ok'.
         rev?:string; //Revision identifier
     }
-
-
 }

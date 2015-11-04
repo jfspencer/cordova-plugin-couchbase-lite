@@ -1,5 +1,5 @@
 /** Minimal EventEmitter interface that is molded against the Node.js
- * EventEmitter interface.*/
+ * EventEmitter interface. converted to typescript from https://github.com/primus/eventemitter3*/
 class EventEmitter {
 
     /** Holds the assigned EventEmitters by name*/

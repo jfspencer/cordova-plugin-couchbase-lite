@@ -129,11 +129,11 @@ class cblDB {
         });
     }
 
-    getAttachment(docId:string, attachmentName:string, rev?:string) {
+    getAttachment(docId:string, attachmentName:string, params?:cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
             var uri:uri.URI = new URI(this.dbUrl);
             uri.segment(docId).segment(attachmentName);
-            if (_.isString(rev)) uri.search({rev: rev});
+            if (params.rev) uri.search({rev: params.rev});
 
             this.processRequest('GET', uri.toString(), null, null,
                 (err, success)=> {
@@ -154,7 +154,7 @@ class cblDB {
         });
     }
 
-    post(doc:cbl.IDoc, params:cbl.IPostDbDocParams) {
+    post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl);
             if (params.batch === 'ok') uri.search({batch: 'ok'});
@@ -168,33 +168,34 @@ class cblDB {
     }
 
 
-    put(doc:cbl.IDoc, params:cbl.IBatchRevParams) {
+    put(doc:cbl.IDoc, params?:cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
             if (!doc._id) reject(cblDB.buildError('doc does not have _id for PUT request', doc));
             var uri = new URI(this.dbUrl);
             uri.segment(doc._id);
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             var requestParams:cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
-            if (params) {
-                requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
-                uri.search(requestParams);
-            }
+            if(!params.rev) requestParams.rev = doc._rev;
+            if (params) requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
+
+            uri.search(requestParams);
             this.processRequest('PUT', uri.toString(), doc, headers,
                 (err, success)=> {
-                    if (err) reject(cblDB.buildError('Error From PUT Request', err));
+                    if (err) reject(cblDB.buildError('Error From PUT Request: ensure doc or params is providing the rev if updating a doc', err));
                     else resolve(success);
                 });
         });
     }
 
-    putAttachment(docId:string, attachmentId:string, attachment:any, type:string) {
+    putAttachment(docId:string, attachmentId:string, attachment:any, mimeType:string, rev?:string) {
         return new Promise((resolve, reject)=> {
-            var headers:cbl.IHeaders = {'Content-Type': type};
+            var headers:cbl.IHeaders = {'Content-Type': mimeType};
             var uri = new URI(this.dbUrl);
             uri.segment(docId).segment(attachmentId);
+            if(rev) uri.search({rev:rev});
             this.processRequest('PUT', uri.toString(), attachment, headers,
                 (err, success)=>{
-                    if (err) reject(cblDB.buildError('Error From PUT Attachment Request', err));
+                    if (err) reject(cblDB.buildError('Error From PUT Attachment Request, if document exists ensure the rev is provided', err));
                     else resolve(success);
                 }, true);
         });
@@ -223,15 +224,11 @@ class cblDB {
         });
     }
 
-    static replicate() {
+    private replicateFrom() {
         /** TODO: NEEDS IMPLEMENTATION */
     }
 
-    replicateFrom() {
-        /** TODO: NEEDS IMPLEMENTATION */
-    }
-
-    replicateTo() {
+    private replicateTo() {
         /** TODO: NEEDS IMPLEMENTATION */
     }
 
@@ -274,10 +271,6 @@ class cblDB {
             reject(cblDB.buildError('revsDiff not implemented yet'));
             /** TODO: NEEDS IMPLEMENTATION */
         });
-    }
-
-    static sync() {
-        /** TODO: NEEDS IMPLEMENTATION */
     }
 
     upsert(doc:cbl.IDoc, params?:cbl.IBatchRevParams) {
