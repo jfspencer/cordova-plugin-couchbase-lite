@@ -12,10 +12,16 @@ This project depends on
   to be globally available in the implementing project.
 
 ## TypeScript Installation
-//TODO
+First add the plugin to your project by
+
+    cordova add plugin https://github.com/happieio/cordova-plugin-couchbase-lite.git
+
+Second move the following API files into the appropriate place in your project.
 
 ## ScalaJS Installation
-//TODO
+First add the plugin to your project by
+
+    cordova add plugin https://github.com/happieio/cordova-plugin-couchbase-lite.git
 
 ## Brief API Overview
 note: The typescript API is formatted for use with external module systems.
