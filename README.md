@@ -29,4 +29,4 @@ provided doc. If the document exists, the latest revision is applied to
  WARNING: Will blindly overwrite data if an older revision doc is passed in.
 
 - when putting an attachment, the _rev is always inferred. a new doc is
-created if _rev is not present
+created if _rev is not present. Only inline attachments are supported

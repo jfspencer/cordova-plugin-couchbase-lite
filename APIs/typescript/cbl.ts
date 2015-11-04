@@ -142,7 +142,7 @@ class cblDB {
                 (err, success)=> {
                     if (err) reject(cblDB.buildError('Error From bulkDocs Request', err));
                     else resolve(success);
-                });
+                }, true);
         });
     }
 
@@ -192,7 +192,14 @@ class cblDB {
 
     putAttachment(docId:string, attachmentId:string, attachment:any, type:string) {
         return new Promise((resolve, reject)=> {
-
+            var headers:cbl.IHeaders = {'Content-Type': type};
+            var uri = new URI(this.dbUrl);
+            uri.segment(docId).segment(attachmentId);
+            this.processRequest('PUT', uri.toString(), attachment, headers,
+                (err, success)=>{
+                    if (err) reject(cblDB.buildError('Error From PUT Attachment Request', err));
+                    else resolve(success);
+                }, true);
         });
     }
 
@@ -317,17 +324,24 @@ class cblDB {
         return error;
     }
 
-    private processRequest(verb:string, url:string, data:Object, headers:Object, cb:Function):void {
+    private processRequest(verb:string, url:string, data:Object, headers:Object, cb:Function, isAttach?:boolean):void {
         var http = new XMLHttpRequest();
         http.open(verb, url, true);
         if (headers) _.forOwn(headers, (value, key)=> { http.setRequestHeader(key, value); });
+        if(isAttach)http.responseType = 'blob'; //options "arraybuffer", "blob", "document", "json", and "text"
 
+        //state change callback
         http.onreadystatechange = () => {
-            if (http.readyState == 4 && http.status >= 200 && http.status <= 299) cb(false, JSON.parse(http.responseText));
+            if (http.readyState == 4 && http.status >= 200 && http.status <= 299){
+                if(isAttach) cb(false, http.response);
+                else cb(false, JSON.parse(http.responseText));
+            }
             else if (http.readyState == 4 && http.status >= 300) cb({status: http.status, response: http.responseText});
         };
 
-        if (verb === 'GET' || verb === 'DELETE')http.send();
+        //send request variations
+        if(verb === 'PUT' && isAttach) http.send(data);
+        else if (verb === 'GET' || verb === 'DELETE')http.send();
         else if (verb === 'POST' || verb === 'PUT' && !_.isNull(data))http.send(JSON.stringify(data));
         else http.send();
     }
