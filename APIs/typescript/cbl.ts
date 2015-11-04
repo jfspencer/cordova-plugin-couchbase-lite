@@ -1,17 +1,15 @@
-///<reference path="cbl.d.ts" />
+///<reference path="typedefs/cblsubtypes.d.ts" />
 
 import Emitter = require('emitter');
 
 class cblDB {
 
-    private serverUrl = '';
-    private dbName = '';
-    private autoCompaction = false;
-    private dbUrl:string = '';
+    dbName = '';
     replicate = null;
+    private dbUrl:string = '';
+    private serverUrl = '';
 
-    constructor(dbName:string, isAutoCompact?:boolean) {
-        if (_.isBoolean(isAutoCompact)) this.autoCompaction = isAutoCompact;
+    constructor(dbName:string) {
         this.dbName = dbName.replace(/[^a-z0-9$_()+-/]/g, '');
 
         this.replicate = {
@@ -72,7 +70,7 @@ class cblDB {
         });
     }
 
-    changes(params:cbl.IGetDbChangesParams) {
+    changes(params:cbl.IGetDbChangesParams):Emitter {
         var http = new XMLHttpRequest();
         var emitter = new Emitter();
         var uri = new URI(this.dbUrl);
@@ -81,6 +79,7 @@ class cblDB {
             //if (http.readyState == 4 && http.status == 200) change(false, JSON.parse(http.responseText));
             //else error({status: http.status, response: http.responseText});
         };
+        //TODO: NEEDS IMPLEMENTATION
 
         //http.open(verb, uri.toString(), true);
         //if (verb === 'GET' || verb === 'DELETE')http.send();
@@ -224,12 +223,14 @@ class cblDB {
         });
     }
 
-    private replicateFrom() {
+    private replicateFrom(params:cbl.IPostReplicateParams):Emitter {
         /** TODO: NEEDS IMPLEMENTATION */
+        return new Emitter();
     }
 
-    private replicateTo() {
+    private replicateTo(params:cbl.IPostReplicateParams):Emitter {
         /** TODO: NEEDS IMPLEMENTATION */
+        return new Emitter();
     }
 
     remove(doc:cbl.IDoc, params?:cbl.IBatchRevParams) {

@@ -1,6 +1,8 @@
-///<reference path="typedefs/bluebird/bluebird.d.ts" />
-///<reference path="typedefs/urijs/URIjs.d.ts" />
-///<reference path="typedefs/lodash/lodash.d.ts" />
+///<reference path="bluebird/bluebird.d.ts" />
+///<reference path="urijs/URIjs.d.ts" />
+///<reference path="lodash/lodash.d.ts" />
+///<reference path="cbl.d.ts" />
+
 
 
 declare var cbl:cbl.IStatic;
@@ -23,25 +25,25 @@ declare module cbl {
 
     interface IGetAllDocsParams {
         conflicts?:boolean; //Include conflict information in the response. This parameter is ignored if the include_docs parameter is false. default:false
-        descending?:boolean; //Return documents in descending order	false
+        descending?:boolean; //Return docs in descending order	false
         endkey?:string; //If this parameter is provided, stop returning records when the specified key is reached.	none
         end_key?:string; //Alias for the endkey parameter	none
-        endkey_docid?:string; //If this parameter is provided, stop returning records when the specified document identifier is reached	none
+        endkey_docid?:string; //If this parameter is provided, stop returning records when the specified doc identifier is reached	none
         end_key_doc_id?:string; //Alias for the endkey_docid parameter	none
-        include_docs?:boolean; //Indicates whether to include the full content of the documents in the response	false
+        include_docs?:boolean; //Indicates whether to include the full content of the docs in the response	false
         inclusive_end?:boolean; //Indicates whether the specified end key should be included in the result	true
-        key?:string;//If this parameter is provided, return only document that match the specified key.	none
-        limit?:number; //If this parameter is provided, return only the specified number of documents	none
-        skip?:number; //If this parameter is provided, skip the specified number of documents before starting to return results	0
-        stale?:string; //Allow the results from a stale view to be used, without triggering a rebuild of all views within the encompassing design document. Valid values: ok and update_after.	none
-        startkey?:string; //If this parameter is provided, return documents starting with the specified key.	none
+        key?:string;//If this parameter is provided, return only doc that match the specified key.	none
+        limit?:number; //If this parameter is provided, return only the specified number of docs	none
+        skip?:number; //If this parameter is provided, skip the specified number of docs before starting to return results	0
+        stale?:string; //Allow the results from a stale view to be used, without triggering a rebuild of all views within the encompassing design doc. Valid values: ok and update_after.	none
+        startkey?:string; //If this parameter is provided, return docs starting with the specified key.	none
         start_key?:string; //Alias for startkey param	none
-        startkey_docid?:string; //If this parameter is provided, return documents starting with the specified document identifier.	none
+        startkey_docid?:string; //If this parameter is provided, return docs starting with the specified doc identifier.	none
         update_seq?:boolean; //Indicates whether to include the update_seq property in the response	false
     }
 
     interface IPostAllDocsParams {
-        keys?:string[]; //List of identifiers of the documents to retrieve
+        keys?:string[]; //List of identifiers of the docs to retrieve
     }
 
     interface IAllDocsParams extends IPostAllDocsParams, IGetAllDocsParams { }
@@ -49,20 +51,20 @@ declare module cbl {
     interface IAllDocsResponse {
         offset:number; //Starting index of the returned rows.
         rows:IDoc[]; //Array of row objects. Each row contains the following objects: id, key, and value. The value object contains the revision identifier in a rev object.
-        total_rows:number; //Number of documents in the database.This number is not the number of rows returned.
-        update_seq:number; //Sequence identifier of the underlying database that the view reflects
+        total_rows:number; //Number of docs in the DB.This number is not the number of rows returned.
+        update_seq:number; //Sequence identifier of the underlying DB that the view reflects
     }
 
     interface IGetDbChangesParams {
-        attachments?:boolean; //Indicates whether to include the Base64-encoded content of attachments in the documents that are included when include_docs is true. this parameter is ignored when include_docs is false. default:false
+        attachments?:boolean; //Indicates whether to include the Base64-encoded content of attachments in the docs that are included when include_docs is true. this parameter is ignored when include_docs is false. default:false
         att_encoding_info?:boolean; //Indicates whether to include encoding information in attachment stubs when include_docs is true. default:false
         conflicts?:boolean; //Includes conflicts information in response. Ignored if include_docs isn’t true. default:false
         descending?:boolean; //Return the change results in descending sequence order (most recent change first). default:false
-        doc_ids?:string[]; //List of document IDs to filter the changes feed as valid JSON array. Used with _doc_ids filter. default:none
+        doc_ids?:string[]; //List of doc IDs to filter the changes feed as valid JSON array. Used with _doc_ids filter. default:none
         feed?:string; //Specifies type of change feed. Valid values: normal, continuous, eventsource, longpoll default:normal
-        filter?:string; //Reference to a filter function from a design document that will filter whole stream emitting only filtered events. default:none
+        filter?:string; //Reference to a filter function from a design doc that will filter whole stream emitting only filtered events. default:none
         heartbeat?:number; //Period in milliseconds after which an empty line is sent in the results. Only applicable for longpoll or continuous feeds. Overrides any timeout to keep the feed alive indefinitely. default:60000
-        include_docs?:boolean; //Indicates whether to include the associated document with each result. f there are conflicts, only the winning revision is returned. default:false
+        include_docs?:boolean; //Indicates whether to include the associated doc with each result. f there are conflicts, only the winning revision is returned. default:false
         'last-event-id'?:number; //Alias for the Last-Event-ID header. default:none
         limit?:number;//	Limits the number of result rows to the specified value. Using a value of 0 has the same effect as the value 1. default:none
         since?:number;//	Starts the results from the change immediately after the given sequence number. The value can be an integer or a row value. default:0
@@ -73,21 +75,21 @@ declare module cbl {
 
     interface IGetPostDbDesignViewName {
         conflicts?:boolean; //Include conflict information in the response. This parameter is ignored if the include_docs parameter is default:false.	false
-        descending?:boolean;	//Return documents in descending order	default:false
+        descending?:boolean;	//Return docs in descending order	default:false
         endkey?:string; //If this parameter is provided, stop returning records when the specified key is reached. default:none
         end_key?:string; //Alias for the endkey parameter default:none
-        endkey_docid?:string; //If this parameter is provided, stop returning records when the specified document identifier is reached default:none
+        endkey_docid?:string; //If this parameter is provided, stop returning records when the specified doc identifier is reached default:none
         end_key_doc_id?:string; //Alias for the endkey_docid parameter default:none
-        include_docs?:boolean; //Indicates whether to include the full content of the documents in the response	default:false
+        include_docs?:boolean; //Indicates whether to include the full content of the docs in the response	default:false
         inclusive_end?:boolean; //Indicates whether the specified end key should be included in the result	default:true
-        key?:string; //If this parameter is provided, return only document that match the specified key. default:none
+        key?:string; //If this parameter is provided, return only doc that match the specified key. default:none
         keys?:string[]; //an array of explicit keys to pull from the view
-        limit?:number; //If this parameter is provided, return only the specified number of documents default:none
-        skip?:number; //If this parameter is provided, skip the specified number of documents before starting to return results default:0
-        stale?:string; //Allow the results from a stale view to be used, without triggering a rebuild of all views within the encompassing design document. Valid values: ok and update_after. default:none
-        startkey?:string; //If this parameter is provided, return documents starting with the specified key. default:none
+        limit?:number; //If this parameter is provided, return only the specified number of docs default:none
+        skip?:number; //If this parameter is provided, skip the specified number of docs before starting to return results default:0
+        stale?:string; //Allow the results from a stale view to be used, without triggering a rebuild of all views within the encompassing design doc. Valid values: ok and update_after. default:none
+        startkey?:string; //If this parameter is provided, return docs starting with the specified key. default:none
         start_key?:string; //Alias for startkey param	none
-        startkey_docid?:string; //If this parameter is provided, return documents starting with the specified document identifier. default:none
+        startkey_docid?:string; //If this parameter is provided, return docs starting with the specified doc identifier. default:none
         update_seq?:boolean; //Indicates whether to include the update_seq property in the response default:false
     }
 
@@ -95,15 +97,15 @@ declare module cbl {
         attachments?:boolean; //Include attachment bodies in response default:false
         att_encoding_info?:boolean; //Include encoding information in attachment stubs if the attachment is compressed default:false
         atts_since?:string[]; //Include attachments only since specified revisions. Does not include attachments for specified revisions	default:none
-        conflicts?:boolean; //Include information about conflicts in document default:false
+        conflicts?:boolean; //Include information about conflicts in doc default:false
         deleted_conflicts?:boolean; //Include information about deleted conflicted revisions	default:false
         latest?:boolean; //Force retrieval of latest leaf revision, no matter what revision was requested default:false
-        local_seq?:boolean; //Include last update sequence number for the document default:false
+        local_seq?:boolean; //Include last update sequence number for the doc default:false
         meta?:boolean; //Acts same as specifying all conflicts, deleted conflicts and open revs query parameters default:false
-        open_revs?:string[]; //Retrieve documents of specified leaf revisions. You can specify the value all to return all leaf revisions default:none
-        rev?:string; //Retrieve the specified revision of the document	default:none
-        revs?:boolean; //Include a list of all known document revisions	default:false
-        revs_info?:boolean; //Include detailed information for all known document revisions	default:false
+        open_revs?:string[]; //Retrieve docs of specified leaf revisions. You can specify the value all to return all leaf revisions default:none
+        rev?:string; //Retrieve the specified revision of the doc	default:none
+        revs?:boolean; //Include a list of all known doc revisions	default:false
+        revs_info?:boolean; //Include detailed information for all known doc revisions	default:false
     }
 
     interface IHeaders {
@@ -112,17 +114,24 @@ declare module cbl {
     }
 
     interface IPostDbBulkDocs {
-        'all_or_nothing'?:boolean; //Optional. Indicates whether to use all-or-nothing semantics for the database commit mode. default:false
-        docs?:IDoc[]; //List containing new or updated documents. Each object in the array can contain the following properties: _id, _rev, _deleted, and values for new and updated documents. default:none
+        'all_or_nothing'?:boolean; //Optional. Indicates whether to use all-or-nothing semantics for the DB commit mode. default:false
+        docs?:IDoc[]; //List containing new or updated docs. Each object in the array can contain the following properties: _id, _rev, _deleted, and values for new and updated docs. default:none
         new_edits?:boolean; //Optional. Indicates whether to assign new revision identifiers to new edits.	default:true
     }
 
     interface IPostDbDocParams{
-        batch:string; //Stores the document in batch mode. To use, set the value to ok. default none.
+        batch:string; //Stores the doc in batch mode. To use, set the value to ok. default none.
+    }
+
+    interface IPostReplicateParams {
+        create_target:boolean; //Indicates whether to create the target DB. Required No
+        source:string | cblDB.instance; //Id of DB to copy from. Either string of local DB name or remote DB URL, or cblInstance. Required:Yes
+        target:string | cblDB.instance; //ID of DB to copy to. Same format and interpretation as source. Required:Yes
+        continuous:boolean; //Specifies whether the replication should be in continuous mode. Required:No
     }
 
     interface IBatchRevParams {
-        batch?:string; //Stores the document in batch mode. To use, set the value to 'ok'.
+        batch?:string; //Stores the doc in batch mode. To use, set the value to 'ok'.
         rev?:string; //Revision identifier
     }
 }
