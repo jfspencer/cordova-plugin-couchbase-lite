@@ -143,13 +143,11 @@ class cblDB {
     }
 
     info() {
-        //use allDocs to get doc count and sequence number and db ame for the db
         return new Promise((resolve, reject)=> {
-            this.allDocs({update_seq: true})
-                .then((info:cbl.IAllDocsResponse)=> {
-                    resolve({'db_name': this.dbName, 'doc_count': info.total_rows, 'update_seq': info.update_seq})
-                })
-                .catch((err)=> {if (err) reject(cblDB.buildError('Error From info Request', err));})
+            this.processRequest('GET',this.dbUrl, null, null,(err, info)=> {
+                if (err) reject(cblDB.buildError('Error From db info Request', err));
+                else resolve({db_name:info.db_name, doc_count:info.doc_count, update_seq:info.update_seq});
+            });
         });
     }
 
@@ -223,9 +221,36 @@ class cblDB {
         });
     }
 
-    private replicateFrom(params:cbl.IPostReplicateParams):Emitter {
-        /** TODO: NEEDS IMPLEMENTATION */
-        return new Emitter();
+    private replicateFrom(params:cbl.IPostReplicateParams):Emitter | Promise<{}> {
+        var emitter = new Emitter();
+        emitter.emit('error');
+
+        var http = new XMLHttpRequest();
+        http.open('POST', url, true);
+        if (headers) _.forOwn(headers, (value, key)=> { http.setRequestHeader(key, value); });
+        if(isAttach)http.responseType = 'blob'; //options "arraybuffer", "blob", "document", "json", and "text"
+
+        //state change callback
+        http.onreadystatechange = () => {
+            if (http.readyState == 4 && http.status >= 200 && http.status <= 299){
+                if(isAttach) cb(false, http.response);
+                else cb(false, JSON.parse(http.responseText));
+            }
+            else if (http.readyState == 4 && http.status >= 300) cb({status: http.status, response: http.responseText});
+        };
+
+        //send request variations
+        if(verb === 'PUT' && isAttach) http.send(data);
+        else if (verb === 'GET' || verb === 'DELETE')http.send();
+        else if (verb === 'POST' || verb === 'PUT' && !_.isNull(data))http.send(JSON.stringify(data));
+        else http.send();
+
+
+
+        var fromPromise = new Promise((resolve, reject)=>{
+
+        });
+        return < Emitter | Promise<{}> >_.merge(emitter, fromPromise);
     }
 
     private replicateTo(params:cbl.IPostReplicateParams):Emitter {

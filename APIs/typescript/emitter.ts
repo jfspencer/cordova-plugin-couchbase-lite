@@ -14,7 +14,7 @@ class EventEmitter {
     }
 
     /** Emit an event to all registered event listeners. */
-    emit(event:string, a1:any, a2:any, a3:any, a4:any, a5:any):boolean {
+    emit(event:string, a1?:any, a2?:any, a3?:any, a4?:any, a5?:any):boolean {
         if (!this._events || !this._events[event]) return false;
         var listeners = this._events[event], len = arguments.length, args, i;
         if ('function' === typeof listeners.fn) {
