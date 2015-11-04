@@ -11,6 +11,12 @@ This project depends on
 [A+ compliant library](https://github.com/promises-aplus/promises-spec/blob/master/implementations.md)
   to be globally available in the implementing project.
 
+## TypeScript Installation
+//TODO
+
+## ScalaJS Installation
+//TODO
+
 ## Brief API Overview
 note: The typescript API is formatted for use with external module systems.
 
