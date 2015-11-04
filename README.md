@@ -13,138 +13,117 @@ This project depends on
 ## Brief API Overview
 note: The typescript API is formatted for use with external module systems.
 
-- Create a New CBL API Instance
-
+Create a New CBL API Instance
 
     new CBL(dbName)
 
-- Initialize the instance. Creates a new DB or obtains the db url for
+initDB: Initialize the instance. Creates a new DB or obtains the db url for
 an existing DB.
-
 
     initDB():Promise
 
-- Fetch multiple docs by indexed by _id. See
+allDocs: Fetch multiple docs by indexed by _id. See
 [Pouch allDocs](http://pouchdb.com/api.html#batch_fetch), no API differences
-
 
     allDocs(params:Object):Promise
 
-- Create multiple docs at once. See
+bulkDocs: Create multiple docs at once. See
 [Pouch bulkDocs](http://pouchdb.com/api.html#batch_create), no API differences
-
 
     bulkDocs(docs:Array<Objects>):Promise
 
-- Subscribe to database change events. See
+changes: Subscribe to database change events. See
 [Pouch changes](http://pouchdb.com/api.html#changes), no API differences
-
 
     changes(params:Objects):Object(Event Emitter)
 
-- Reduce db file size by removing outdated leaf revisions. This function creates an
+compact: Reduce db file size by removing outdated leaf revisions. This function creates an
 optimized duplicate database. Therefore up to twice the current storage space of the
  specified database is required for the compaction routine to complete.
 [Pouch compact](http://pouchdb.com/api.html#compaction), no API differences
 
-
     compact():Promise
 
-- deletes the database. See
+destroy: deletes the database. See
 [Pouch destroy](http://pouchdb.com/api.html#delete_database), no API differences
-
 
     destroy():Promise
 
-- Get a single doc from the db. See
+get: Get a single doc from the db. See
 [Pouch get](http://pouchdb.com/api.html#fetch_document), no API differences
-
 
     get(docId:string, params?:Object):Promise
 
-- Get an attachment associated with a doc. See
+getAttachment: Get an attachment associated with a doc. See
 [Pouch getAttachment](http://pouchdb.com/api.html#bget_attachment), no API differences
-
 
     getAttachment(docId:string, attachmentName:string, params?:Object):Promise
 
-- Get basic info about the db including, name, # of docs and current seq id. See
+info: Get basic info about the db including, name, # of docs and current seq id. See
 [Pouch info](http://pouchdb.com/api.html#database_information), no API differences
-
 
     info():Promise
 
-- Creates a doc in the DB. The DB will create the id for you if _id is not specified.
+post: Creates a doc in the DB. The DB will create the id for you if _id is not specified.
 Use PUT if you are updating a doc.
  See [Pouch post](http://pouchdb.com/api.html#using-dbpost), no API differences
 
-
     post(docs:Object, params?:Object):Promise
 
-- PUT a doc in the DB. Must have user generated _id. See
+put: Create or update a doc in the DB. Must have user generated _id. See
 [Pouch put](http://pouchdb.com/api.html#create_document), DIFFERENCES: docId and revId
 are always inferred from the input doc, if rev is provided in the params, it takes
 precedence over the doc._rev;
 
-
     put(doc:Object, params?:Object):Promise
 
-- add an attachment. See
+putAttachment: add an attachment. See
 [Pouch putAttachment](http://pouchdb.com/api.html#save_attachment), DIFFERENCE: rev is
 the last param in the signature.
 
-
     putAttachment(docId:string, attachmentId:string, attachment:any, mimeType:string, rev?:string):Promise
 
-- Query a custom view. See
+query: perform a view lookup based on the index of a design document. See
 [Pouch query](http://pouchdb.com/api.html#query_database), no API differences
-
 
     query(view:string, params:Object):Promise
 
-- Start replication to a remote DB from a cbl DB. See
+replicate.to: Start replication to a remote DB from a cbl DB. See
 [Pouch replicate.to](http://pouchdb.com/api.html#example-usage-9), no API differences
-
 
     replicate.to(remoteDbUrl:string):Object(event emitter)
 
-- Add replication from a remote DB to a cbl DB. See
+replicate.from: Start replication from a remote DB to a cbl DB. See
 [Pouch replicate.from](http://pouchdb.com/api.html#example-usage-9), no API differences
-
 
     replicate.from(remoteDbUrl:string):Object(event emitter)
 
-- deletes a document. See
+remove: delete a document. See
 [Pouch remove](http://pouchdb.com/api.html#delete_document), no API differences
-
 
     remove(doc:Object, params?:Object):Promise
 
-- Remove an attachment from a specified doc. See
+removeAttachment: Remove an attachment from a specified doc. See
 [Pouch removeAttachment](http://pouchdb.com/api.html#delete_attachment),
  no API differences
 
-
     removeAttachment(docId:string, attachmentId:string, rev:string):Promise
 
-- Provided a list of rev ids for a given doc, returns a subset of rev ids not stored
- in the db for that doc. See
-[Pouch revDiffs](http://pouchdb.com/api.html#revisions_diff), NOT IMPLEMENTED YET
-
+revDiffs: NOT IMPLEMENTED YET : Provided a list of rev ids for a given doc, 
+returns a subset of rev ids not stored in the db for that doc. See
+[Pouch revDiffs](http://pouchdb.com/api.html#revisions_diff)
 
     revsDiff(doc:Object):Promise
 
-- Automatically updates or inserts the provided doc.
+upsert: Automatically updates or inserts the provided doc.
 WARNING: Will blindly overwrite data if an older revision id is passed in.This
 is a convenience function. It is similar to
 [Nolan Lawson's Upsert](https://github.com/pouchdb/upsert) But not as robust.
 
-
     upsert(doc:Object, params?:Object):Promise
 
-- Removes indexes that do not have a companion design doc and updates stale view
+viewCleanup: NOT IMPLEMENTED YET Removes indexes that do not have a companion design doc and updates stale view
 indexes. See[Pouch bulkDocs](http://pouchdb.com/api.html#view_cleanup),
-NOT IMPLEMENTED YET
 
 
     viewCleanup():Promise
