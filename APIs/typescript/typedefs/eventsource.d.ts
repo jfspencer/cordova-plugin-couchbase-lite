@@ -1,4 +1,3 @@
-
 declare var EventSource: IEventSource.instance;
 
 declare module IEventSource {
@@ -8,7 +7,6 @@ declare module IEventSource {
         onerror:(e:IEventSourceResponse)=>void;
         onmessage:(e:IEventSourceResponse)=>void;
         close():void;
-
     }
 
     interface IEventSourceResponse{
@@ -16,7 +14,5 @@ declare module IEventSource {
         data:any;
         id:string;
         retry:number; //milliseconds
-
-
     }
 }
