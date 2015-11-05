@@ -46,7 +46,8 @@ bulkDocs: Create multiple docs at once. See
     bulkDocs(docs:Array<Objects>):Promise
 
 changes: Subscribe to database change events. See
-[Pouch changes](http://pouchdb.com/api.html#changes), no API differences
+[Pouch changes](http://pouchdb.com/api.html#changes),
+DIFFERENCES: only EventSource changes are supported.
 
     changes(params:Objects):Object(Event Emitter)
 
@@ -101,15 +102,17 @@ query: perform a view lookup based on the index of a design document. See
 
     query(view:string, params:Object):Promise
 
-replicate.to: Start replication to a remote DB from a cbl DB. See
-[Pouch replicate.to](http://pouchdb.com/api.html#example-usage-9), no API differences
+replicate.to: Start replication to another DB from a cbl DB. See
+[Pouch replicate.to](http://pouchdb.com/api.html#example-usage-9),
+DIFFERENCES: only accepts string names/URLs
 
-    replicate.to(remoteDbUrl:string):Object(event emitter)
+    replicate.to(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
 
-replicate.from: Start replication from a remote DB to a cbl DB. See
-[Pouch replicate.from](http://pouchdb.com/api.html#example-usage-9), no API differences
+replicate.from: Start replication from another DB to a cbl DB. See
+[Pouch replicate.from](http://pouchdb.com/api.html#example-usage-9),
+DIFFERENCES: only accepts string names/URLs
 
-    replicate.from(remoteDbUrl:string):Object(event emitter)
+    replicate.from(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
 
 remove: delete a document. See
 [Pouch remove](http://pouchdb.com/api.html#delete_document), no API differences
@@ -169,7 +172,7 @@ defined in the params takes precedence over the doc._rev.
 
 - The replicate and sync functions are not provided because there is not a
  static object for CBL to work from. Use replicate.to or replicate.from on
- a CBL instance instead.
+ a CBL instance instead. the replicate functions only accept string name/urls
 
 - An Upsert Function is provided. It automatically updates or inserts the
 provided doc. If the document exists, the latest revision is applied to

@@ -2,6 +2,7 @@
 ///<reference path="urijs/URIjs.d.ts" />
 ///<reference path="lodash/lodash.d.ts" />
 ///<reference path="cbl.d.ts" />
+///<reference path="eventsource.d.ts" />
 
 
 
@@ -124,10 +125,15 @@ declare module cbl {
     }
 
     interface IPostReplicateParams {
-        create_target:boolean; //Indicates whether to create the target DB. Required No
-        source:string | cblDB.instance; //Id of DB to copy from. Either string of local DB name or remote DB URL, or cblInstance. Required:Yes
-        target:string | cblDB.instance; //ID of DB to copy to. Same format and interpretation as source. Required:Yes
-        continuous:boolean; //Specifies whether the replication should be in continuous mode. Required:No
+        create_target?:boolean; //Indicates whether to create the target DB. Required No
+        source?:string | cblDB.instance; //Id of DB to copy from. Either string of local DB name or remote DB URL, or cblInstance. Required:Yes
+        target?:string | cblDB.instance; //ID of DB to copy to. Same format and interpretation as source. Required:Yes
+        continuous?:boolean; //Specifies whether the replication should be in continuous mode. Required:No
+    }
+
+    interface IPostReplicateResposne {
+        ok:boolean; //Indicates whether the replication operation was successful
+        session_id:string; //Session identifier
     }
 
     interface IBatchRevParams {

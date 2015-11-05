@@ -4,8 +4,10 @@ class EventEmitter {
     /** Holds the assigned EventEmitters by name*/
     private _events = null;
 
-    off = null;
-    addListener = null;
+    off:Function = null;
+    addListener:Function = null;
+    cancel:Function = null;
+    cancelId:string = null;
 
     constructor() {
         // Alias methods names because people roll like that.
@@ -96,7 +98,7 @@ class EventEmitter {
     }
 
     /** Remove all listeners or only the listeners for the specified event. event: The event want to remove all listeners for. */
-    removeAllListeners(event:string) {
+    removeAllListeners(event?:string) {
         if (!this._events) return this;
         if (event) delete this._events[event];
         else this._events = Object.create(null);
