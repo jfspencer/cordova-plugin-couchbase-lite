@@ -1,4 +1,5 @@
 .idea
 
-/APIs/typescript/emitter.js
+/APIs/typescript/cblemitter.js
 /APIs/typescript/cbl.js
+npm-debug.log

@@ -1,0 +1,30 @@
+{
+  "name": "cordova-plugin-couchbase-lite",
+  "version": "0.0.1",
+  "description": "Cordova Couchbase Lite Plugin + APIs",
+  "cordova": {
+    "id": "Cordova Couchbase Lite + APIs",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/happieio/cordova-plugin-couchbase-lite"
+  },
+  "keywords": [
+    "cordova",
+    "couchbase",
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios",
+    "lite",
+    "Typscript",
+    "ScalaJS",
+    "REST",
+    "API"
+  ],
+  "author": "Apache Software Foundation. APIs by James Spencer",
+  "license": "Apache 2.0"
+}

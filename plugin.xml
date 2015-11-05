@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-couchbase-lite" version="0.0.1">
-    <name>Couchbase Lite</name>
-    <description>Install Couchbase Lite in your app to enable JSON sync.</description>
+    <name>Cordova Couchbase Lite + APIs</name>
+    <description>Provides Typescript and ScalaJS APIs over the provided REST API.</description>
     <license>Apache 2.0</license>
     <js-module src="www/cblite.js" name="CouchbaseLite">
         <clobbers target="cbl"/>
