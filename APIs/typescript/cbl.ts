@@ -81,6 +81,11 @@ class cblDB {
         var source = new EventSource(uri.toString());
         source.onerror = (e) => { emitter.emit('error', JSON.parse(e.data)); };
         source.onmessage = (e) => {emitter.emit('change', JSON.parse(e.data)); };
+        emitter.cancel = () =>{
+            source.close();
+            emitter.emit('complete');
+            emitter.removeAllListeners();
+        };
         return emitter;
     }
 

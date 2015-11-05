@@ -7,6 +7,7 @@ declare module IEventSource {
         new(url:string):IEventSource.instance;
         onerror:(e:IEventSourceResponse)=>void;
         onmessage:(e:IEventSourceResponse)=>void;
+        close():void;
 
     }
 

@@ -7,6 +7,8 @@ declare module EventEmitter {
         _events;
         off: any;
         addListener: any;
+        cancel:Function;
+        cancelId:string;
         constructor();
         /** Emit an event to all registered event listeners. */
         emit(event:string, a1:any, a2:any, a3:any, a4:any, a5:any): boolean;
