@@ -12,11 +12,18 @@ This project depends on
   to be globally available in the implementing project.
 
 ## TypeScript Installation
-First add the plugin to your project by
+- First add the plugin to your project by
 
     cordova add plugin https://github.com/happieio/cordova-plugin-couchbase-lite.git
 
-Second move the following API files into the appropriate place in your project.
+- Second move the following API files into the appropriate place in your project.
+APIs -> typescript -> cbl.ts & cblemitter.ts
+APIs -> typescript -> typedefs -> cbl.d.ts & cblemitter.d.ts & cblsubtypes.d.ts & eventsource.d.ts
+
+- Third Fix the ///<reference /> paths to be relative to your project and link to or copy the
+bluebird, jquery, lodash and urijs defintion files.
+
+- Fourth import the cbl.ts file into your data access class and have fun :)
 
 ## ScalaJS Installation
 First add the plugin to your project by
