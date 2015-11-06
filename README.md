@@ -1,7 +1,11 @@
 # Cordova-Plugin-Couchbase-Lite
-Couchbase Lite Cordova plugin that provides a
-full typescript and scalajs interfaces over CBL's REST API. This repo is intentionally not forked from the main
-[couchbase-lite-phonegap](https://github.com/couchbaselabs/Couchbase-Lite-PhoneGap-Plugin) repo. A seperate issue tracker is needed to track issues and progress with the typescript and scalajs interface code. This repo does not intend to provide improvements ahead of the main repository for the native code. This code will be manually updates as it is released from couchbase.
+Couchbase Lite Cordova plugin that provides a full typescript and scalajs interfaces over
+ CBL's REST API. This repo is intentionally not forked from the main
+[couchbase-lite-phonegap](https://github.com/couchbaselabs/Couchbase-Lite-PhoneGap-Plugin)
+repo. A seperate issue tracker is needed to track issues and progress with the typescript and
+scalajs interface code. This repo does not intend to provide improvements ahead of the main
+ repository for the native code. This code will be manually updated as it is
+ released from couchbase.
 
 API strictly follows [PouchDB](http://pouchdb.com/api.html)'s API,
  with the exceptions listed under [Differences Compared to PouchAPI](#quirks)
@@ -17,21 +21,27 @@ This project depends on
     cordova add plugin https://github.com/happieio/cordova-plugin-couchbase-lite.git
 
 - Second move the following API files into the appropriate place in your project.
-APIs -> typescript -> cbl.ts & cblemitter.ts
-APIs -> typescript -> typedefs -> cbl.d.ts & cblemitter.d.ts & cblsubtypes.d.ts & eventsource.d.ts
+  - APIs -> typescript -> cbl.ts & cblemitter.ts
+  - APIs -> typescript -> typedefs -> cbl.d.ts & cblemitter.d.ts & cblsubtypes.d.ts & eventsource.d.ts
 
 - Third Fix the ///<reference /> paths to be relative to your project and link to or copy the
-bluebird, jquery, lodash and urijs defintion files.
+bluebird, jquery, lodash and urijs definition files.
 
 - Fourth import the cbl.ts file into your data access class and have fun :)
 
-## ScalaJS Installation
+## ScalaJS Installation - API NOT WRITTEN YET
 First add the plugin to your project by
 
     cordova add plugin https://github.com/happieio/cordova-plugin-couchbase-lite.git
 
+
+## Contributing
+Your Help in writing unit tests for Travis are very welcome and reporting or generating
+a pull request for bug fixes or improvements are always welcome too!
+
+
 ## Brief API Overview
-note: The typescript API is formatted for use with external module systems.
+note: The typescript API is formatted for use with external module systems(AMD, CommonJS etc.).
 
 Create a New CBL API Instance
 
@@ -54,9 +64,10 @@ bulkDocs: Create multiple docs at once. See
 
 changes: Subscribe to database change events. See
 [Pouch changes](http://pouchdb.com/api.html#changes),
-DIFFERENCES: only EventSource changes are supported.
+DIFFERENCES: only EventSource changes are supported. Only style is supported under advanced options.
+only returns a promise in order to support the since:'now' feature.
 
-    changes(params:Objects):Object(Event Emitter)
+    changes(params:Objects):Promise<Emitter>
 
 compact: Reduce db file size by removing outdated leaf revisions. This function creates an
 optimized duplicate database. Therefore up to twice the current storage space of the

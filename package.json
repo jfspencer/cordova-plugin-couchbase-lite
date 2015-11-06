@@ -23,7 +23,8 @@
     "Typscript",
     "ScalaJS",
     "REST",
-    "API"
+    "API",
+    "Javascript"
   ],
   "author": "Apache Software Foundation. APIs by James Spencer",
   "license": "Apache 2.0"
