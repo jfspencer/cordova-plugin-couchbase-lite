@@ -1,3 +1,3 @@
-[submodule "typeapp"]
+[submodule "tests/typeapp"]
 	path = tests/typeapp
-	url = git@github.com:happieio/typeapp.git
+	url = https://github.com/happieio/typeapp.git

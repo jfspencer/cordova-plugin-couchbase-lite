@@ -9,6 +9,7 @@
   "exclude": [
     ".idea",
     "APIs/scalajs",
+    "tests",
     "lib",
     "src",
     "www"

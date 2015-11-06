@@ -1,5 +1,5 @@
-.idea
-
-/APIs/typescript/cblemitter.js
-/APIs/typescript/cbl.js
+.idea/
 npm-debug.log
+node_modules
+APIs/typescript/cbl.js
+APIs/typescript/cblemitter.js
