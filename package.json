@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-couchbase-lite",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Cordova Couchbase Lite Plugin + APIs",
   "cordova": {
     "id": "Cordova Couchbase Lite + APIs",
