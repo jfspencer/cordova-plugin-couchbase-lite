@@ -21,6 +21,8 @@ bit code and slicing. The CBL iOS libraries do not support them yet. Also has co
 options for supporting swift in cordova ios projects.
 
 ## TypeScript Installation
+- here is a reference implementation of typescript cordova/ionic and cbl (TypeApp)[https://github.com/happieio/typeapp]
+
 - First add the plugin to your project by
 
     cordova add plugin https://github.com/happieio/cordova-plugin-couchbase-lite.git
