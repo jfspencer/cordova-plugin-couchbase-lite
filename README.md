@@ -11,9 +11,14 @@ API strictly follows [PouchDB](http://pouchdb.com/api.html)'s API,
  with the exceptions listed under [Differences Compared to PouchAPI](#quirks)
 
 This project depends on
-[URI.js](https://medialize.github.io/URI.js/),[lodash](https://lodash.com/docs) and an
+[URI.js](https://medialize.github.io/URI.js/), [lodash](https://lodash.com/docs) and an
 [A+ compliant library](https://github.com/promises-aplus/promises-spec/blob/master/implementations.md)
   to be globally available in the implementing project.
+
+## Cordova Setup
+- Add the util/010_addxcodeoptions.js to the hooks/after_prepare folder. This file turns off
+bit code and slicing. The CBL iOS libraries do not support them yet. Also has commented config
+options for supporting swift in cordova ios projects.
 
 ## TypeScript Installation
 - First add the plugin to your project by
