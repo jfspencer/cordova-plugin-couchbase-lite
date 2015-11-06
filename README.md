@@ -52,7 +52,7 @@ an existing DB.
 
     initDB():Promise
 
-allDocs: Fetch multiple docs by indexed by _id. See
+allDocs: Fetch multiple docs from the primary _id index. See
 [Pouch allDocs](http://pouchdb.com/api.html#batch_fetch), no API differences
 
     allDocs(params:Object):Promise
