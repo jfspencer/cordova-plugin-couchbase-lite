@@ -128,7 +128,7 @@ declare module cbl {
 
     interface IPostDbBulkDocs {
         'all_or_nothing'?:boolean; //Optional. Indicates whether to use all-or-nothing semantics for the DB commit mode. default:false
-        docs?:IDoc[]; //List containing new or updated docs. Each object in the array can contain the following properties: _id, _rev, _deleted, and values for new and updated docs. default:none
+        docs:IDoc[]; //List containing new or updated docs. Each object in the array can contain the following properties: _id, _rev, _deleted, and values for new and updated docs. default:none
         new_edits?:boolean; //Optional. Indicates whether to assign new revision identifiers to new edits.	default:true
     }
 
