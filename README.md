@@ -31,7 +31,7 @@ options for supporting swift in cordova ios projects.
   - APIs -> typescript -> cbl.ts & cblemitter.ts
   - APIs -> typescript -> typedefs -> cbl.d.ts & cblemitter.d.ts & cblsubtypes.d.ts & eventsource.d.ts
 
-- Third Fix the ///<reference /> paths to be relative to your project and link to or copy the
+- Third Fix the /// reference paths to be relative to your project and link to or copy the
 bluebird, jquery, lodash and urijs definition files.
 
 - Fourth import the cbl.ts file into your data access class and have fun :)
@@ -188,8 +188,9 @@ generate an error if the response status is not 201 or 412.
 
 - The dbName can only be string name, not a url to a remote couchDB. CBL
 only provides interfaces for replicating to and from an internal database.
+Use replication.to or replication.from to link a local db to a remote one.
 
-- The API only returns promises or in the case of changes and replication
+- The API only returns promises or in the case of the replication functions
 an object. Callbacks are not supported.
 
 - The remove function only supports remove(doc:Object, params). A rev
