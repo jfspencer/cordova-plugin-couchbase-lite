@@ -5,7 +5,6 @@
 ///<reference path="eventsource.d.ts" />
 
 
-
 declare var cbl:cbl.IStatic;
 
 // Support AMD require
@@ -132,7 +131,7 @@ declare module cbl {
         new_edits?:boolean; //Optional. Indicates whether to assign new revision identifiers to new edits.	default:true
     }
 
-    interface IPostDbDocParams{
+    interface IPostDbDocParams {
         batch:string; //Stores the doc in batch mode. To use, set the value to ok. default none.
     }
 

@@ -7,8 +7,9 @@ scalajs interface code. This repo does not intend to provide improvements ahead 
  repository for the native code. This code will be manually updated as it is
  released from couchbase.
 
-API strictly follows [PouchDB](http://pouchdb.com/api.html)'s API,
- with the exceptions listed under [Differences Compared to PouchAPI](#quirks)
+API follows [PouchDB](http://pouchdb.com/api.html)'s API as strictly as possible,
+ with the exceptions listed under [Differences Compared to PouchAPI](#quirks).
+ If you have a suggestion on how to remove an exception(s) please submit a pull request.
 
 This project depends on
 [URI.js](https://medialize.github.io/URI.js/), [lodash](https://lodash.com/docs) and an
@@ -55,9 +56,11 @@ Create a New CBL API Instance
     new CBL(dbName)
 
 initDB: Initialize the instance. Creates a new DB or obtains the db url for
-an existing DB.
+an existing DB. Passing in a remote couch db will initialize the remote db
+as the primary db. This currently requres the user:pass@url syntax. have not implemented
+cookie authentication.
 
-    initDB():Promise
+    initDB(remoteDBUrl?):Promise
 
 allDocs: Fetch multiple docs from the primary _id index. See
 [Pouch allDocs](http://pouchdb.com/api.html#batch_fetch), no API differences
@@ -127,15 +130,15 @@ query: perform a view lookup based on the index of a design document. See
 
     query(view:string, params:Object):Promise
 
-replicate.to: Start replication to another DB from a cbl DB. See
+replicateTo: Start replication to another DB from a cbl DB. See
 [Pouch replicate.to](http://pouchdb.com/api.html#example-usage-9),
-DIFFERENCES: only accepts string names/URLs
+DIFFERENCES: only accepts string names/URLs. This is a single function call no sub object "to".
 
     replicate.to(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
 
-replicate.from: Start replication from another DB to a cbl DB. See
+replicateFrom: Start replication from another DB to a cbl DB. See
 [Pouch replicate.from](http://pouchdb.com/api.html#example-usage-9),
-DIFFERENCES: only accepts string names/URLs
+DIFFERENCES: only accepts string names/URLs. This is a single function call no sub object "from".
 
     replicate.from(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
 
@@ -197,8 +200,10 @@ an object. Callbacks are not supported.
 defined in the params takes precedence over the doc._rev.
 
 - The replicate and sync functions are not provided because there is not a
- static object for CBL to work from. Use replicate.to or replicate.from on
- a CBL instance instead. the replicate functions only accept string name/urls
+ static object for CBL to work from. If you want to work from a remote db
+ pass in the authenticated CouchDB url as first parameter to initDB.
+  Otherwise use replicateTo or replicateFrom on a CBL instance instead.
+  the replicate functions only accept string name(local)/url(remote).
 
 - An Upsert Function is provided. It automatically updates or inserts the
 provided doc. If the document exists, the latest revision is applied to

@@ -108,9 +108,14 @@ class EventEmitter {
 
 /** Representation of a single EventEmitter function. */
 class EE {
-    fn:Function = null; context:any = null; once:boolean = false;
+    fn:Function = null;
+    context:any = null;
+    once:boolean = false;
+
     constructor(fn:Function, context:any, once?:boolean) {
-        this.fn = fn; this.context = context; this.once = once || false;
+        this.fn = fn;
+        this.context = context;
+        this.once = once || false;
     }
 }
 export = EventEmitter;
