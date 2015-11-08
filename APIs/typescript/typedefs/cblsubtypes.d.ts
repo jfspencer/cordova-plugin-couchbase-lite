@@ -5,6 +5,7 @@
 ///<reference path="eventsource.d.ts" />
 
 
+
 declare var cbl:cbl.IStatic;
 
 // Support AMD require
@@ -127,7 +128,7 @@ declare module cbl {
 
     interface IPostDbBulkDocs {
         'all_or_nothing'?:boolean; //Optional. Indicates whether to use all-or-nothing semantics for the DB commit mode. default:false
-        docs:IDoc[]; //List containing new or updated docs. Each object in the array can contain the following properties: _id, _rev, _deleted, and values for new and updated docs. default:none
+        docs?:IDoc[]; //List containing new or updated docs. Each object in the array can contain the following properties: _id, _rev, _deleted, and values for new and updated docs. default:none
         new_edits?:boolean; //Optional. Indicates whether to assign new revision identifiers to new edits.	default:true
     }
 
@@ -140,6 +141,8 @@ declare module cbl {
         source?:string | cblDB.instance; //Id of DB to copy from. Either string of local DB name or remote DB URL, or cblInstance. Required:Yes
         target?:string | cblDB.instance; //ID of DB to copy to. Same format and interpretation as source. Required:Yes
         continuous?:boolean; //Specifies whether the replication should be in continuous mode. Required:No
+        replication_id?:string; //used to id a replication for cancellation
+        cancel?:boolean; //used to cancel a replication, requires replication_id to be present.
     }
 
     interface IPostReplicateResposne {

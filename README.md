@@ -134,13 +134,13 @@ replicateTo: Start replication to another DB from a cbl DB. See
 [Pouch replicate.to](http://pouchdb.com/api.html#example-usage-9),
 DIFFERENCES: only accepts string names/URLs. This is a single function call no sub object "to".
 
-    replicate.to(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
+    replicateTo(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
 
 replicateFrom: Start replication from another DB to a cbl DB. See
 [Pouch replicate.from](http://pouchdb.com/api.html#example-usage-9),
 DIFFERENCES: only accepts string names/URLs. This is a single function call no sub object "from".
 
-    replicate.from(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
+    replicateFrom(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
 
 remove: delete a document. See
 [Pouch remove](http://pouchdb.com/api.html#delete_document), no API differences
