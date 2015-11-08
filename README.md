@@ -133,14 +133,16 @@ query: perform a view lookup based on the index of a design document. See
 replicateTo: Start replication to another DB from a cbl DB. See
 [Pouch replicate.to](http://pouchdb.com/api.html#example-usage-9),
 DIFFERENCES: only accepts string names/URLs. This is a single function call no sub object "to".
+Only single shot replication is supported at the moment. Pull requests welcome.
 
-    replicateTo(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
+    replicateTo(remoteDbUrl:string, params:Object):Promise
 
 replicateFrom: Start replication from another DB to a cbl DB. See
 [Pouch replicate.from](http://pouchdb.com/api.html#example-usage-9),
 DIFFERENCES: only accepts string names/URLs. This is a single function call no sub object "from".
+ Only single shot replication is supported at the moment. Pull requests welcome.
 
-    replicateFrom(remoteDbUrl:string, params:Object):Object(event emitter) | Promise
+    replicateFrom(remoteDbUrl:string, params:Object):Promise
 
 remove: delete a document. See
 [Pouch remove](http://pouchdb.com/api.html#delete_document), no API differences
