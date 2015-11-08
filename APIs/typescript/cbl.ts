@@ -11,7 +11,7 @@ class cblDB {
     };
 
     private dbUrl:string = '';
-    private serverUrl = '';
+    private localServerUrl = '';
 
     constructor(dbName:string) {
         this.dbName = dbName.replace(/[^a-z0-9$_()+-/]/g, '');
@@ -21,15 +21,15 @@ class cblDB {
         return new Promise((resolve, reject)=> {
 
             if (remotePrimaryDB) {
-                this.serverUrl = remotePrimaryDB;
-                this.dbUrl = new URI(this.serverUrl).directory(this.dbName).toString();
+                this.localServerUrl = remotePrimaryDB;
+                this.dbUrl = new URI(this.localServerUrl).directory(this.dbName).toString();
                 resolve('initialized remote CouchDB as the primary db for this instance');
             }
             else {
                 //get cbl server url
                 cbl.getServerURL((url)=> {
-                        this.serverUrl = url;
-                        this.dbUrl = new URI(this.serverUrl).directory(this.dbName).toString();
+                        this.localServerUrl = url;
+                        this.dbUrl = new URI(this.localServerUrl).directory(this.dbName).toString();
                         this.processRequest('PUT', this.dbUrl.toString(), null, null,
                             (err, response)=> {
                                 if (err.status = 412) resolve(err.response);
@@ -49,7 +49,7 @@ class cblDB {
     activeTasks() {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
-            var uri = new URI(this.serverUrl).segment('_active_tasks');
+            var uri = new URI(this.localServerUrl).segment('_active_tasks');
             this.processRequest(verb, uri.toString(), null, null,
                 (err, success)=> {
                     if (err) reject(cblDB.buildError('Error From activeTasks Request', err));
@@ -172,6 +172,15 @@ class cblDB {
         });
     }
 
+    infoRemote(remoteDBUrl){
+        return new Promise((resolve, reject)=> {
+            this.processRequest('GET', remoteDBUrl, null, null, (err, info)=> {
+                if (err) reject(cblDB.buildError('Error From db info remote Request', err));
+                else resolve(info);
+            });
+        });
+    }
+
     post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl);
@@ -236,10 +245,10 @@ class cblDB {
         });
     }
 
-    replicateFrom(otherDB:string, bodyRequest:cbl.IPostReplicateParams) {
+    replicateFrom(otherDB:string, bodyRequest?:cbl.IPostReplicateParams) {
         return new Promise((resolve, reject)=> {
             bodyRequest = {source: this.dbName, target: otherDB, continuous:false};
-            var uri = new URI(this.serverUrl).segment('_replicate');
+            var uri = new URI(this.localServerUrl).segment('_replicate');
             return this.processRequest('POST', uri.toString(), bodyRequest, null,
                 (err, response)=> {
                     if (err) reject(cblDB.buildError('Error From replicate from Request', err));
@@ -249,10 +258,10 @@ class cblDB {
 
     }
 
-    replicateTo(otherDB:string, bodyRequest:cbl.IPostReplicateParams) {
+    replicateTo(otherDB:string, bodyRequest?:cbl.IPostReplicateParams) {
         return new Promise((resolve, reject)=> {
             bodyRequest = {source: otherDB, target: this.dbName, continuous:false};
-            var uri = new URI(this.serverUrl).segment('_replicate');
+            var uri = new URI(this.localServerUrl).segment('_replicate');
             this.processRequest('POST', uri.toString(), bodyRequest, null,
                 (err, response)=> {
                     if (err) reject(cblDB.buildError('Error From replicate to Request', err));
