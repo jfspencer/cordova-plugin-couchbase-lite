@@ -340,11 +340,11 @@ class cblDB {
     private replicationRequest(params:cbl.IPostReplicateParams, verb:string, uri:string, source:string):Emitter | Promise<{}> {
         var emitter = new Emitter();
         var http = new XMLHttpRequest();
-        emitter.cancel(()=> {
+        emitter.cancel = ()=> {
             emitter.emit('complete');
             emitter.removeAllListeners();
             if (params.continuous) {this.cancelReplication(emitter.cancelId)}
-        });
+        };
 
         //TODO : use _active_tasks end point to handle active, pause events
 
