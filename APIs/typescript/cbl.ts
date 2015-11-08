@@ -238,7 +238,7 @@ class cblDB {
 
     replicateFrom(otherDB:string, bodyRequest:cbl.IPostReplicateParams) {
         return new Promise((resolve, reject)=> {
-            bodyRequest = {source: this.dbName, target: otherDB};
+            bodyRequest = {source: this.dbName, target: otherDB, continuous:false};
             var uri = new URI(this.serverUrl).segment('_replicate');
             return this.processRequest('POST', uri.toString(), bodyRequest, null,
                 (err, response)=> {
@@ -251,7 +251,7 @@ class cblDB {
 
     replicateTo(otherDB:string, bodyRequest:cbl.IPostReplicateParams) {
         return new Promise((resolve, reject)=> {
-            bodyRequest = {source: otherDB, target: this.dbName};
+            bodyRequest = {source: otherDB, target: this.dbName, continuous:false};
             var uri = new URI(this.serverUrl).segment('_replicate');
             this.processRequest('POST', uri.toString(), bodyRequest, null,
                 (err, response)=> {
