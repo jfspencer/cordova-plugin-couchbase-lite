@@ -6,28 +6,25 @@ declare module cblDB {
 
     interface instance {
         dbName:string;
-        eventTypes:{active: string, change: string, complete: string, denied: string, error: string, paused: string };
         dbUrl:string;
         localServerUrl:string;
         syncUrl:string;
-        serverUrl:string;
-        constructor(dbName:string);
         initDB(): Promise<{}>;
         allDocs(params:cbl.IAllDocsParams): Promise<{}>;
         bulkDocs(docs:Array<cbl.IDoc>): Promise<{}>;
-        changes(params:cbl.IGetDbChangesParams): EventEmitter.instance;
+        changes(params:cbl.IGetDbChangesParams): Promise<any>;
         compact(): Promise<{}>;
         destroy(): Promise<{}>;
         get(docId:string, params?:cbl.IGetDbDocParams): Promise<{}>;
         getAttachment(docId:string, attachmentName:string, params?:cbl.IBatchRevParams): Promise<{}>;
         info(): Promise<{}>;
-        infoRemote(): Promise<{}>;
+        infoRemote(remoteUrl?:string): Promise<{}>;
         post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams): Promise<{}>;
         put(doc:cbl.IDoc, params?:cbl.IBatchRevParams): Promise<{}>;
         putAttachment(docId:string, attachmentId:string, attachment:any, mimeType:string, rev?:string): Promise<{}>;
         query(view:string, params:cbl.IDbDesignViewName): Promise<{}>;
-        replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string): EventEmitter.instance;
-        replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string): EventEmitter.instance;
+        replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string): Promise<any>;
+        replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string): Promise<any>;
         remove(doc:cbl.IDoc, params?:cbl.IBatchRevParams): Promise<{}>;
         removeAttachment(docId:string, attachmentId:string, rev:string): Promise<{}>;
         revsDiff(): Promise<{}>;
