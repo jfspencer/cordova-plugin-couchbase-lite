@@ -51,16 +51,17 @@ a pull request for bug fixes or improvements are always welcome too!
 ## Brief API Overview
 note: The typescript API is formatted for use with external module systems(AMD, CommonJS etc.).
 
-Create a New CBL API Instance
+Create a New CBL API Instance. Can optionally provide a sync url for simplified user of the replicate
+functions.
 
-    new CBL(dbName)
+    new CBL(dbName, syncUrl?:string)
 
 initDB: Initialize the instance. Creates a new DB or obtains the db url for
-an existing DB. Passing in a remote couch db will initialize the remote db
-as the primary db. This currently requres the user:pass@url syntax. have not implemented
-cookie authentication.
+an existing DB. Can optionally provide a syncUrl for convenience with
+ the replicate functions. This currently requres the user:pass@url syntax.
+ have not implemented cookie authentication.
 
-    initDB(remoteDBUrl?):Promise
+    initDB(syncUrl?):Promise
 
 allDocs: Fetch multiple docs from the primary _id index. See
 [Pouch allDocs](http://pouchdb.com/api.html#batch_fetch), no API differences
@@ -75,7 +76,8 @@ bulkDocs: Create multiple docs at once. See
 changes: Subscribe to database change events. See
 [Pouch changes](http://pouchdb.com/api.html#changes),
 DIFFERENCES: only EventSource changes are supported. Only style is supported under advanced options.
-only returns a promise in order to support the since:'now' feature.
+only returns a promise in order to support the since:'now' feature. the live option is obsolete
+using EventSource, and is omitted.
 
     changes(params:Objects):Promise<Emitter>
 

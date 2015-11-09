@@ -86,7 +86,7 @@ declare module cbl {
         update_seq:number; //Number of updates to the database
     }
 
-    interface IGetPostDbDesignViewName {
+    interface IGetDbDesignViewName {
         conflicts?:boolean; //Include conflict information in the response. This parameter is ignored if the include_docs parameter is default:false.	false
         descending?:boolean;	//Return docs in descending order	default:false
         endkey?:string; //If this parameter is provided, stop returning records when the specified key is reached. default:none
@@ -96,7 +96,6 @@ declare module cbl {
         include_docs?:boolean; //Indicates whether to include the full content of the docs in the response	default:false
         inclusive_end?:boolean; //Indicates whether the specified end key should be included in the result	default:true
         key?:string; //If this parameter is provided, return only doc that match the specified key. default:none
-        keys?:string[]; //an array of explicit keys to pull from the view
         limit?:number; //If this parameter is provided, return only the specified number of docs default:none
         skip?:number; //If this parameter is provided, skip the specified number of docs before starting to return results default:0
         stale?:string; //Allow the results from a stale view to be used, without triggering a rebuild of all views within the encompassing design doc. Valid values: ok and update_after. default:none
@@ -105,6 +104,12 @@ declare module cbl {
         startkey_docid?:string; //If this parameter is provided, return docs starting with the specified doc identifier. default:none
         update_seq?:boolean; //Indicates whether to include the update_seq property in the response default:false
     }
+
+    interface IPostDbDesignViewName {
+        keys?:string[]; //an array of explicit keys to pull from the view
+    }
+
+    interface IDbDesignViewName extends IPostDbDesignViewName, IGetDbDesignViewName { }
 
     interface IGetDbDocParams {
         attachments?:boolean; //Include attachment bodies in response default:false
