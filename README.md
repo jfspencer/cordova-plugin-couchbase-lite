@@ -128,7 +128,9 @@ the last param in the signature.
     putAttachment(docId:string, attachmentId:string, attachment:any, mimeType:string, rev?:string):Promise
 
 query: perform a view lookup based on the index of a design document. See
-[Pouch query](http://pouchdb.com/api.html#query_database), no API differences
+[Pouch query](http://pouchdb.com/api.html#query_database). view should not contains
+'_design' it is hard coded into the function . A design doc with id '_design/myview' with
+a view function name byname should pass 'myview/byname' to the view param.
 
     query(view:string, params:Object):Promise
 

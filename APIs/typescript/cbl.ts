@@ -231,7 +231,6 @@ class cblDB {
     query(view:string, params:cbl.IDbDesignViewName) {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             var viewParts = view.split('/');
             var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
             if (params.keys) {
@@ -240,7 +239,7 @@ class cblDB {
             }
             else requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
             var uri = new URI(this.dbUrl).segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]).search(requestParams);
-            this.processRequest(verb, uri.toString(), null, headers,
+            this.processRequest(verb, uri.toString(), null, null,
                 (err, response)=> {
                     if (err) reject(this.buildError('Error From Query Request', err));
                     else resolve(response);
