@@ -27,7 +27,7 @@
     "Javascript"
   ],
   "author": "Apache Software Foundation. APIs by James Spencer",
-  "license": "(Apache 2.0)",
+  "license": "Apache 2.0",
   "dependencies": {
     "appium": "^1.4.14"
   }

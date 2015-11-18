@@ -13,7 +13,7 @@ API follows [PouchDB](http://pouchdb.com/api.html)'s API as strictly as possible
 
 This project depends on
 [URI.js](https://medialize.github.io/URI.js/), [lodash](https://lodash.com/docs) and an
-[A+ compliant library](https://github.com/promises-aplus/promises-spec/blob/master/implementations.md)
+[A+ compliant Promise library](https://github.com/promises-aplus/promises-spec/blob/master/implementations.md)
   to be globally available in the implementing project.
 
 ## Cordova Setup
