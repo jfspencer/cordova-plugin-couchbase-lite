@@ -22,7 +22,7 @@ declare module cblDB {
         post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams): Promise<{}>;
         put(doc:cbl.IDoc, params?:cbl.IBatchRevParams): Promise<{}>;
         putAttachment(docId:string, attachmentId:string, attachment:any, mimeType:string, rev?:string): Promise<{}>;
-        query(view:string, params:cbl.IDbDesignViewName): Promise<{}>;
+        query(view:string, params?:cbl.IDbDesignViewName): Promise<{}>;
         replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string): Promise<any>;
         replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string): Promise<any>;
         remove(doc:cbl.IDoc, params?:cbl.IBatchRevParams): Promise<{}>;

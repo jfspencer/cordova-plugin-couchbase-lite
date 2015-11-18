@@ -174,9 +174,9 @@ class cblDB {
         });
     }
 
-    infoRemote(remoteDBUrl?:string){
+    infoRemote(remoteDBUrl?:string) {
         return new Promise((resolve, reject)=> {
-            if(!remoteDBUrl) remoteDBUrl = this.syncUrl;
+            if (!remoteDBUrl) remoteDBUrl = this.syncUrl;
             this.processRequest('GET', remoteDBUrl, null, null, (err, info)=> {
                 if (err) reject(this.buildError('Error From db info remote Request', err));
                 else resolve(info);
@@ -228,18 +228,42 @@ class cblDB {
         });
     }
 
-    query(view:string, params:cbl.IDbDesignViewName) {
+    query(view:string, params?:cbl.IDbDesignViewName) {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
+            var data = null;
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var jsonParams = [];
             var viewParts = view.split('/');
+            var uri = new URI(this.dbUrl).segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]);
+            var fullURI = uri.toString();
             var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
-            if (params.keys) {
-                verb = 'POST';
-                requestParams.keys = params.keys;
+            if(params){
+                if (params.keys) {
+                    verb = 'POST';
+                    data = params;
+                }
+                else {
+                    requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
+                    requestParams.update_seq = true;
+                    if(params.key){
+                        jsonParams.push('key="' + params.key + '"');
+                        requestParams = _.omit(requestParams, 'key');
+                    }
+                    if(params.startkey || params.start_key){
+                        jsonParams.push('startkey="' + params.startkey + '"');
+                        requestParams = _.omit(requestParams, ['startkey','start_key']);
+                    }
+                    if(params.endkey || params.end_key){
+                        jsonParams.push('endkey="' + params.endkey + '"');
+                        requestParams = _.omit(requestParams, ['endkey','end_key']);
+                    }
+                    fullURI = uri.search(requestParams).toString();
+                    _.each(jsonParams, (param)=>{ fullURI += '&' + param; })
+                }
             }
-            else requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
-            var uri = new URI(this.dbUrl).segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]).search(requestParams);
-            this.processRequest(verb, uri.toString(), null, null,
+
+            this.processRequest(verb, fullURI, data, headers,
                 (err, response)=> {
                     if (err) reject(this.buildError('Error From Query Request', err));
                     else resolve(response);
@@ -249,8 +273,8 @@ class cblDB {
 
     replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
-            if(!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
-            bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous:false};
+            if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
+            bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
             var uri = new URI(this.localServerUrl).segment('_replicate');
             return this.processRequest('POST', uri.toString(), bodyRequest, null,
                 (err, response)=> {
@@ -262,8 +286,8 @@ class cblDB {
 
     replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
-            if(!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
-            bodyRequest = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous:false};
+            if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
+            bodyRequest = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
             var uri = new URI(this.localServerUrl).segment('_replicate');
             this.processRequest('POST', uri.toString(), bodyRequest, null,
                 (err, response)=> {
