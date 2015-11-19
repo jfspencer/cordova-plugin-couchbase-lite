@@ -18,6 +18,22 @@ declare module cbl {
         getServerURL(success:(url:string) => void, error:(error:any) => void):void;
     }
 
+    interface IActiveTaskArray{
+        [index:number]:IActiveTask;
+    }
+
+    interface IActiveTask {
+        continuous:boolean; //Indicates whether the task is for a continuous replication
+        error:any[]; //error information
+        progress:number; //Percentage of task completed
+        source:string; //Name of source database
+        status:string; //Task status
+        target:string; //Name of target database
+        task:string; //Session identifier
+        type:string; //Type of task. The type is always Replication.
+        x_active_requests:any[];//Active requests
+    }
+
     interface IDoc {
         _id:string;
         _rev?:string;

@@ -48,7 +48,7 @@ class cblDB {
         });
     }
 
-    activeTasks() {
+    activeTasks():any {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
             var uri = new URI(this.localServerUrl).segment('_active_tasks');

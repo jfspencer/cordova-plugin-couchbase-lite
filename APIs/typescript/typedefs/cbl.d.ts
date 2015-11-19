@@ -10,6 +10,7 @@ declare module cblDB {
         localServerUrl:string;
         syncUrl:string;
         initDB(): Promise<{}>;
+        activeTasks():any;
         allDocs(params:cbl.IAllDocsParams): Promise<{}>;
         bulkDocs(docs:Array<cbl.IDoc>): Promise<{}>;
         changes(params:cbl.IGetDbChangesParams): Promise<any>;
