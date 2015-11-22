@@ -356,7 +356,7 @@ class cblDB {
                     requestParams.rev = dbDoc._rev;
                     doc._rev = dbDoc._rev;
                     uri.search(requestParams);
-                    put(doc);
+                    return put(doc);
                 })
                 .catch((error)=> {
                     if (error.status === 404) put(doc);
@@ -383,7 +383,7 @@ class cblDB {
     processRequest(verb:string, url:string, data:Object, headers:Object, cb:Function, isAttach?:boolean):void {
         var http = new XMLHttpRequest();
         http.open(verb, url, true);
-        if (headers) _.forOwn(headers, (value, key)=> { http.setRequestHeader(key, value); });
+        if (headers) _.forOwn(headers, (value:any, key)=> { http.setRequestHeader(key, value); });
         if (isAttach)http.responseType = 'blob'; //options "arraybuffer", "blob", "document", "json", and "text"
 
         //state change callback
