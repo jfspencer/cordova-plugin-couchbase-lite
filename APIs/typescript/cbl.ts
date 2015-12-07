@@ -19,16 +19,14 @@ class cblDB {
         this.syncUrl = syncUrl;
     }
 
-    initDB(syncUrl?:string) {
+    initDB(serverUrl?:string) {
         return new Promise((resolve, reject)=> {
-
-            if (syncUrl) {
-                this.syncUrl = syncUrl;
+            if (serverUrl) {
+                this.localServerUrl = serverUrl;
                 this.dbUrl = new URI(this.localServerUrl).directory(this.dbName).toString();
                 resolve('initialized remote CouchDB as the primary db for this instance');
             }
             else {
-                //get cbl server url
                 cbl.getServerURL((url)=> {
                         this.localServerUrl = url;
                         this.dbUrl = new URI(this.localServerUrl).directory(this.dbName).toString();
@@ -187,7 +185,7 @@ class cblDB {
     post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl);
-            if (params.batch === 'ok') uri.search({batch: 'ok'});
+            if (_.includes(params.batch,'ok')) uri.search({batch: 'ok'});
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             this.processRequest('POST', uri.toString(), doc, headers,
                 (err, success)=> {
@@ -238,7 +236,7 @@ class cblDB {
             var uri = new URI(this.dbUrl).segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]);
             var fullURI = uri.toString();
             var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
-            if(params){
+            if (params) {
                 if (params.keys) {
                     verb = 'POST';
                     data = params;
@@ -246,20 +244,20 @@ class cblDB {
                 else {
                     requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
                     requestParams.update_seq = true;
-                    if(params.key){
+                    if (params.key) {
                         jsonParams.push('key="' + params.key + '"');
                         requestParams = _.omit(requestParams, 'key');
                     }
-                    if(params.startkey || params.start_key){
+                    if (params.startkey || params.start_key) {
                         jsonParams.push('startkey="' + params.startkey + '"');
-                        requestParams = _.omit(requestParams, ['startkey','start_key']);
+                        requestParams = _.omit(requestParams, ['startkey', 'start_key']);
                     }
-                    if(params.endkey || params.end_key){
+                    if (params.endkey || params.end_key) {
                         jsonParams.push('endkey="' + params.endkey + '"');
-                        requestParams = _.omit(requestParams, ['endkey','end_key']);
+                        requestParams = _.omit(requestParams, ['endkey', 'end_key']);
                     }
                     fullURI = uri.search(requestParams).toString();
-                    _.each(jsonParams, (param)=>{ fullURI += '&' + param; })
+                    _.each(jsonParams, (param)=> { fullURI += '&' + param; })
                 }
             }
 
