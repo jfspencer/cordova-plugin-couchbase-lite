@@ -9,7 +9,7 @@ scalajs interface code. This repo does not intend to provide improvements ahead 
 
 API follows [PouchDB](http://pouchdb.com/api.html)'s API as strictly as possible,
  with the exceptions listed under [Differences Compared to PouchAPI](#quirks).
- If you have a suggestion on how to remove an exception(s) please submit a pull request.
+ If you have a suggestion on how to remove any exception(s) please submit a pull request.
 
 This project depends on
 [URI.js](https://medialize.github.io/URI.js/), [lodash](https://lodash.com/docs) and an
@@ -197,21 +197,19 @@ generate an error if the response status is not 201 or 412.
 
 - The dbName can only be string name, not a url to a remote couchDB. CBL
 only provides interfaces for replicating to and from an internal database.
-Use replication.to or replication.from to link a local db to a remote one.
+Use replicationTo or replicationFrom to link a local db to a remote one.
 
-- The API only returns promises or in the case of the replication functions
-an object. Callbacks are not supported.
+- The API only returns promises. Callbacks are not supported.
 
 - The remove function only supports remove(doc:Object, params). A rev
 defined in the params takes precedence over the doc._rev.
 
 - The replicate and sync functions are not provided because there is not a
  static object for CBL to work from. If you want to work from a remote db
- pass in the authenticated CouchDB url as first parameter to initDB.
-  Otherwise use replicateTo or replicateFrom on a CBL instance instead.
-  the replicate functions only accept string name(local)/url(remote).
+ pass in the authenticated CouchDB url as a parameter to initDB.
+ Otherwise use replicateTo or replicateFrom on a CBL instance instead.
 
 - An Upsert Function is provided. It automatically updates or inserts the
 provided doc. If the document exists, the latest revision is applied to
  the input doc to force a successful update with the provided doc.
- WARNING: Will blindly overwrite data if an older revision id is passed in.
+ WARNING: Will blindly overwrite data.
