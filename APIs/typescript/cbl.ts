@@ -19,30 +19,24 @@ class cblDB {
         this.syncUrl = syncUrl;
     }
 
-    initDB(serverUrl?:string) {
+    initDB(syncUrl?:string) {
         return new Promise((resolve, reject)=> {
-            if (serverUrl) {
-                this.localServerUrl = serverUrl;
-                this.dbUrl = new URI(this.localServerUrl).directory(this.dbName).toString();
-                resolve('initialized remote CouchDB as the primary db for this instance');
-            }
-            else {
-                cbl.getServerURL((url)=> {
-                        this.localServerUrl = url;
-                        this.dbUrl = new URI(this.localServerUrl).directory(this.dbName).toString();
-                        this.processRequest('PUT', this.dbUrl.toString(), null, null,
-                            (err, response)=> {
-                                if (err.status = 412) resolve(err.response);
-                                else if (response.ok) resolve(true);
-                                else if (err) reject(this.buildError('Error From DB PUT Request with status: ' + err.status, err));
-                                else reject(this.buildError('Unknown Error From DB PUT Request', {
-                                        res: response,
-                                        err: err
-                                    }));
-                            });
-                    },
-                    (err)=> {throw new Error(err); });
-            }
+            if (syncUrl) this.syncUrl = syncUrl;
+            cbl.getServerURL((url)=> {
+                    this.localServerUrl = url;
+                    this.dbUrl = new URI(this.localServerUrl).directory(this.dbName).toString();
+                    this.processRequest('PUT', this.dbUrl.toString(), null, null,
+                        (err, response)=> {
+                            if (err.status = 412) resolve(err.response);
+                            else if (response.ok) resolve(true);
+                            else if (err) reject(this.buildError('Error From DB PUT Request with status: ' + err.status, err));
+                            else reject(this.buildError('Unknown Error From DB PUT Request', {
+                                    res: response,
+                                    err: err
+                                }));
+                        });
+                },
+                (err)=> {throw new Error(err); });
         });
     }
 
@@ -185,7 +179,7 @@ class cblDB {
     post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl);
-            if (_.includes(params.batch,'ok')) uri.search({batch: 'ok'});
+            if (_.includes(params.batch, 'ok')) uri.search({batch: 'ok'});
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             this.processRequest('POST', uri.toString(), doc, headers,
                 (err, success)=> {
