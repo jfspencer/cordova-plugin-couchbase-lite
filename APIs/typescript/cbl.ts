@@ -179,7 +179,7 @@ class cblDB {
     post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl);
-            if (_.includes(params.batch, 'ok')) uri.search({batch: 'ok'});
+            if (_.includes(params.batch,'ok')) uri.search({batch: 'ok'});
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             this.processRequest('POST', uri.toString(), doc, headers,
                 (err, success)=> {
@@ -195,8 +195,10 @@ class cblDB {
             if (!doc._id) reject(this.buildError('doc does not have _id for PUT request', doc));
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             var requestParams:cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
-            if (!params.rev) requestParams.rev = doc._rev;
-            if (params) requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
+            if (params) {
+                if (!params.rev) requestParams.rev = doc._rev;
+                requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
+            }
 
             var uri = new URI(this.dbUrl).segment(doc._id).search(requestParams);
             this.processRequest('PUT', uri.toString(), doc, headers,
@@ -230,7 +232,7 @@ class cblDB {
             var uri = new URI(this.dbUrl).segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]);
             var fullURI = uri.toString();
             var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
-            if (params) {
+            if(params){
                 if (params.keys) {
                     verb = 'POST';
                     data = params;
@@ -238,20 +240,20 @@ class cblDB {
                 else {
                     requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
                     requestParams.update_seq = true;
-                    if (params.key) {
+                    if(params.key){
                         jsonParams.push('key="' + params.key + '"');
                         requestParams = _.omit(requestParams, 'key');
                     }
-                    if (params.startkey || params.start_key) {
+                    if(params.startkey || params.start_key){
                         jsonParams.push('startkey="' + params.startkey + '"');
-                        requestParams = _.omit(requestParams, ['startkey', 'start_key']);
+                        requestParams = _.omit(requestParams, ['startkey','start_key']);
                     }
-                    if (params.endkey || params.end_key) {
+                    if(params.endkey || params.end_key){
                         jsonParams.push('endkey="' + params.endkey + '"');
-                        requestParams = _.omit(requestParams, ['endkey', 'end_key']);
+                        requestParams = _.omit(requestParams, ['endkey','end_key']);
                     }
                     fullURI = uri.search(requestParams).toString();
-                    _.each(jsonParams, (param)=> { fullURI += '&' + param; })
+                    _.each(jsonParams, (param)=>{ fullURI += '&' + param; })
                 }
             }
 
@@ -382,7 +384,7 @@ class cblDB {
         http.onreadystatechange = () => {
             if (http.readyState == 4 && http.status >= 200 && http.status <= 299) {
                 if (isAttach) cb(false, http.response);
-                else cb(false, JSON.parse(http.responseText));
+                else cb(false, JSON.parse(http.responseText), http);
             }
             else if (http.readyState == 4 && http.status >= 300) cb({status: http.status, response: http.responseText});
         };
@@ -390,9 +392,70 @@ class cblDB {
         //send request variations
         if (verb === 'PUT' && isAttach) http.send(data);
         else if (verb === 'GET' || verb === 'DELETE')http.send();
-        else if (verb === 'POST' || verb === 'PUT' && !_.isNull(data))http.send(JSON.stringify(data));
+        else if (verb === 'POST' || verb === 'PUT' && !_.isNull(data))http.send(JSON.stringify(JSON.decycle(data)));
         else http.send();
     }
+}
+
+
+interface JSON { decycle:any; retrocycle:any; }
+if (typeof JSON.decycle !== 'function') {
+    JSON.decycle = function decycle(object) {
+        'use strict';
+        var objects = [], paths = [];
+
+        return (function derez(value, path) {
+            var i, name, nu;
+            if (typeof value === 'object' && value !== null && !(value instanceof Boolean) && !(value instanceof Date) && !(value instanceof Number) && !(value instanceof RegExp) && !(value instanceof String)) {
+                for (i = 0; i < objects.length; i += 1) { if (objects[i] === value) { return {$ref: paths[i]}; } }
+                objects.push(value);
+                paths.push(path);
+                if (Object.prototype.toString.apply(value) === '[object Array]') {
+                    nu = [];
+                    for (i = 0; i < value.length; i += 1) { nu[i] = derez(value[i], path + '[' + i + ']'); }
+                }
+                else {
+                    nu = {};
+                    for (name in value) { if (Object.prototype.hasOwnProperty.call(value, name)) { nu[name] = derez(value[name], path + '[' + JSON.stringify(name) + ']'); }}
+                }
+                return nu;
+            }
+            return value;
+        }(object, '$'));
+    };
+}
+if (typeof JSON.retrocycle !== 'function') {
+    JSON.retrocycle = function retrocycle($) {
+        'use strict';
+        var px = /^\$(?:\[(?:\d+|\"(?:[^\\\"\u0000-\u001f]|\\([\\\"\/bfnrt]|u[0-9a-zA-Z]{4}))*\")\])*$/;
+        (function rez(value) {
+            var i, item, name, path;
+            if (value && typeof value === 'object') {
+                if (Object.prototype.toString.apply(value) === '[object Array]') {
+                    for (i = 0; i < value.length; i += 1) {
+                        item = value[i];
+                        if (item && typeof item === 'object') {
+                            path = item.$ref;
+                            if (typeof path === 'string' && px.test(path)) {value[i] = eval(path); }
+                            else { rez(item); }
+                        }
+                    }
+                } else {
+                    for (name in value) {
+                        if (typeof value[name] === 'object') {
+                            item = value[name];
+                            if (item) {
+                                path = item.$ref;
+                                if (typeof path === 'string' && px.test(path)) { value[name] = eval(path);}
+                                else { rez(item); }
+                            }
+                        }
+                    }
+                }
+            }
+        }($));
+        return $;
+    };
 }
 
 export = cblDB;
