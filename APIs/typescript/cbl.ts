@@ -73,11 +73,10 @@ class cblDB {
 
     bulkDocs(docs:cbl.IPostDbBulkDocs) {
         return new Promise((resolve, reject)=> {
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             var uri = new URI(this.dbUrl).segment('_bulk_docs');
-            this.processRequest('POST', uri.toString(), docs, headers,
+            this.processRequest('POST', uri.toString(), docs, null,
                 (err, success)=> {
-                    if (err) reject(this.buildError('Error From bulkDocs Request', err));
+                    if (err) reject(this.buildError('Error From bulkDocs Request, ensure docs array is in request', err));
                     else resolve(success);
                 })
         });
