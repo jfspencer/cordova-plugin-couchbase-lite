@@ -238,18 +238,26 @@ class cblDB {
                     data = params;
                 }
                 else {
+                    if(params.start_key) params.startkey = params.start_key;
+                    if(params.end_key) params.endkey = params.end_key;
                     requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
                     requestParams.update_seq = true;
                     if(params.key){
-                        jsonParams.push('key="' + params.key + '"');
+                        if(_.isArray(params.key)) jsonParams.push('key=' + JSON.stringify(params.key));
+                        else if(_.isString) jsonParams.push('key="' + params.key + '"');
+                        else if(_.isNumber) jsonParams.push('key=' + params.key);
                         requestParams = _.omit(requestParams, 'key');
                     }
-                    if(params.startkey || params.start_key){
-                        jsonParams.push('startkey="' + params.startkey + '"');
+                    if(params.startkey){
+                        if(_.isArray(params.startkey)) jsonParams.push('startkey=' + JSON.stringify(params.startkey));
+                        else if(_.isString) jsonParams.push('startkey="' + params.startkey + '"');
+                        else if(_.isNumber) jsonParams.push('startkey=' + params.startkey);
                         requestParams = _.omit(requestParams, ['startkey','start_key']);
                     }
-                    if(params.endkey || params.end_key){
-                        jsonParams.push('endkey="' + params.endkey + '"');
+                    if(params.endkey){
+                        if(_.isArray(params.endkey)) jsonParams.push('endkey=' + JSON.stringify(params.endkey));
+                        else if(_.isString) jsonParams.push('endkey="' + params.endkey + '"');
+                        else if(_.isNumber) jsonParams.push('endkey=' + params.endkey);
                         requestParams = _.omit(requestParams, ['endkey','end_key']);
                     }
                     fullURI = uri.search(requestParams).toString();
