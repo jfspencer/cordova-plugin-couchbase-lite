@@ -272,7 +272,7 @@ class cblDB {
         });
     }
 
-    replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
+    replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
             if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
             bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
@@ -285,7 +285,7 @@ class cblDB {
         });
     }
 
-    replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
+    replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
             if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
             bodyRequest = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
