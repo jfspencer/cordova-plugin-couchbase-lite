@@ -87,19 +87,32 @@ class cblDB {
             .then((info:cbl.IGetDbChangesResponse)=> {
                 if (params.since === 'now') params.since = info.committed_update_seq;
 
-                if (!params)params = {feed: 'eventsource'};
-                else params.feed = 'eventsource';
-                var emitter = new Emitter();
+                /* EventSource Style changes, when android supports event source properly turn this on
+                 if (!params)params = {feed: 'eventsource'};
+                 else params.feed = 'eventsource';
+                 var emitter = new Emitter();
+                 var uri = new URI(this.dbUrl).segment('_changes').search(params);
+                 var source = new EventSource(uri.toString());
+                 source.onerror = (e) => { emitter.emit('error', JSON.parse(e.data)); };
+                 source.onmessage = (e) => {emitter.emit('change', JSON.parse(e.data)); };
+                 emitter.cancel = () => {
+                 source.close();
+                 emitter.emit('complete');
+                 emitter.removeAllListeners();
+                 };
+                 return emitter;
+                 */
+
+                if (!params)params = {feed: 'normal'};
+                else params.feed = 'normal';
                 var uri = new URI(this.dbUrl).segment('_changes').search(params);
-                var source = new EventSource(uri.toString());
-                source.onerror = (err) => { emitter.emit('error', err); };
-                source.onmessage = (res) => {emitter.emit('change', JSON.parse(res.data)); };
-                emitter.cancel = () => {
-                    source.close();
-                    emitter.emit('complete');
-                    emitter.removeAllListeners();
-                };
-                return emitter;
+                return new Promise((resolve, reject)=>{
+                    this.processRequest('GET', uri.toString(), null, null,
+                        (err, success)=> {
+                            if (err) reject(this.buildError('Error From _changes request', err));
+                            else resolve(success);
+                        });
+                })
             })
             .catch((err)=> { this.buildError('Error From changes request for db info', err) })
     }
