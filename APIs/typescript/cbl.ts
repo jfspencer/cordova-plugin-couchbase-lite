@@ -92,8 +92,8 @@ class cblDB {
                 var emitter = new Emitter();
                 var uri = new URI(this.dbUrl).segment('_changes').search(params);
                 var source = new EventSource(uri.toString());
-                source.onerror = (e) => { emitter.emit('error', JSON.parse(e.data)); };
-                source.onmessage = (e) => {emitter.emit('change', JSON.parse(e.data)); };
+                source.onerror = (err) => { emitter.emit('error', err); };
+                source.onmessage = (res) => {emitter.emit('change', JSON.parse(res.data)); };
                 emitter.cancel = () => {
                     source.close();
                     emitter.emit('complete');
@@ -269,6 +269,8 @@ class cblDB {
                     if (err) reject(this.buildError('Error From Query Request', err));
                     else resolve(response);
                 });
+        }).catch((error)=>{
+            console.log(JSON.stringify(error));
         });
     }
 
@@ -277,7 +279,7 @@ class cblDB {
             if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
             bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
             var uri = new URI(this.localServerUrl).segment('_replicate');
-            return this.processRequest('POST', uri.toString(), bodyRequest, null,
+            this.processRequest('POST', uri.toString(), bodyRequest, null,
                 (err, response)=> {
                     if (err) reject(this.buildError('Error From replicate from Request', err));
                     else resolve(response);
@@ -357,7 +359,7 @@ class cblDB {
                     requestParams.rev = dbDoc._rev;
                     doc._rev = dbDoc._rev;
                     uri.search(requestParams);
-                    return put(doc);
+                    put(doc);
                 })
                 .catch((error)=> {
                     if (error.status === 404) put(doc);
