@@ -10,14 +10,9 @@
 
 @synthesize liteURL;
 
-- (id) initWithWebView:(UIWebView*)theWebView
-{
-    self = [super initWithWebView:theWebView];
-    if (self) {
-        // todo check domain whitelist to give devs a helpful error message
-        [self launchCouchbaseLite];
-    }
-    return self;
+- (void) pluginInitialize {
+    // Initialization code here
+    [self launchCouchbaseLite];
 }
 
 - (void)getURL:(CDVInvokedUrlCommand*)urlCommand
