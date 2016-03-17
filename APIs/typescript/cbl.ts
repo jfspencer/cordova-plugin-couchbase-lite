@@ -27,7 +27,7 @@ class cblDB {
                     this.dbUrl = new URI(this.localServerUrl).directory(this.dbName).toString();
                     this.processRequest('PUT', this.dbUrl.toString(), null, null,
                         (err, response)=> {
-                            if (err.status = 412) resolve(err.response);
+                            if (err.status == 412) resolve(err.response);
                             else if (response.ok) resolve(true);
                             else if (err) reject(this.buildError('Error From DB PUT Request with status: ' + err.status, err));
                             else reject(this.buildError('Unknown Error From DB PUT Request', {
