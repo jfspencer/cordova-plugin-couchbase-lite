@@ -1,10 +1,13 @@
+/// <reference path="../../../../typedefs/tsd.d.ts" />
 ///<reference path="typedefs/cblsubtypes.d.ts" />
 
-import Emitter = require('cblemitter');
+import Emitter = require('./cblemitter');
+import IActiveTaskArray = cbl.IActiveTaskArray;
 
 class cblDB {
 
     dbName = '';
+    lastChange = 0;
 
     static eventTypes = {
         active: 'active', change: 'change', complete: 'complete', denied: 'denied', error: 'error', paused: 'paused'
@@ -56,14 +59,13 @@ class cblDB {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
             var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
-            if (_.isArray(params.keys)) {
+            if (params.keys) {
                 verb = 'POST';
-                requestParams.keys = params.keys;
             }
             else requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
 
             var uri = new URI(this.dbUrl).segment('_all_docs').search(requestParams);
-            this.processRequest(verb, uri.toString(), null, null,
+            this.processRequest(verb, uri.toString(), params, null,
                 (err, success)=> {
                     if (err) reject(this.buildError('Error From allDocs Request', err));
                     else resolve(success);
@@ -85,7 +87,11 @@ class cblDB {
     changes(params?:cbl.IGetDbChangesParams):Promise<void> {
         return this.info()
             .then((info:cbl.IGetDbChangesResponse)=> {
-                if (params.since === 'now') params.since = info.committed_update_seq;
+                if(this.lastChange === 0) this.lastChange = info.update_seq > 0 ? info.update_seq - 1 : 0;
+                if (params.since === 'now') {
+                    params.since = this.lastChange;
+                }
+                this.lastChange = info.update_seq;
 
                 /* EventSource Style changes, when android supports event source properly turn this on
                  if (!params)params = {feed: 'eventsource'};
@@ -282,8 +288,6 @@ class cblDB {
                     if (err) reject(this.buildError('Error From Query Request', err));
                     else resolve(response);
                 });
-        }).catch((error)=>{
-            console.log(JSON.stringify(error));
         });
     }
 
@@ -372,7 +376,7 @@ class cblDB {
                     requestParams.rev = dbDoc._rev;
                     doc._rev = dbDoc._rev;
                     uri.search(requestParams);
-                    put(doc);
+                    return put(doc);
                 })
                 .catch((error)=> {
                     if (error.status === 404) put(doc);
@@ -396,7 +400,7 @@ class cblDB {
         return error;
     }
 
-    processRequest(verb:string, url:string, data:Object, headers:Object, cb:Function, isAttach?:boolean):void {
+    processRequest(verb:string, url:string, data:any, headers:Object, cb:Function, isAttach?:boolean):void {
         var http = new XMLHttpRequest();
         http.open(verb, url, true);
         if (headers) _.forOwn(headers, (value:any, key)=> { http.setRequestHeader(key, value); });
