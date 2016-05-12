@@ -71,12 +71,13 @@
     	<source-file src="lib/android/couchbase-lite-java-javascript-1.2.1.jar" target-dir="libs"/>
     	<source-file src="lib/android/couchbase-lite-java-listener-1.2.1.jar" target-dir="libs"/>
     	<source-file src="lib/android/couchbase-lite-java-core-1.2.1.jar" target-dir="libs"/>
-    	<source-file src="lib/android/jackson-annotations-2.5.0.jar" target-dir="libs"/>
-    	<source-file src="lib/android/jackson-core-2.5.0.jar" target-dir="libs"/>
-    	<source-file src="lib/android/jackson-databind-2.5.0.jar" target-dir="libs"/>
     	<source-file src="lib/android/servlet-2-3.jar" target-dir="libs"/>
     	<source-file src="lib/android/rhino-1.7R3.jar" target-dir="libs"/>
     	<source-file src="lib/android/stateless4j-2.4.0.jar" target-dir="libs"/>
     	<source-file src="lib/android/webserver-2-3.jar" target-dir="libs"/>
+        <framework src="com.fasterxml.jackson.core:jackson-annotations:2.5.3"/>
+        <framework src="com.fasterxml.jackson.core:jackson-core:2.5.3"/>
+        <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
+        <framework src="com.fasterxml.jackson.module:jackson-module-afterburner:2.5.3"/>
     </platform>
 </plugin>
