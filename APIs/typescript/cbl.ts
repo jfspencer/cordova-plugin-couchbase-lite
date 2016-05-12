@@ -1,4 +1,3 @@
-/// <reference path="../../../../typedefs/tsd.d.ts" />
 ///<reference path="typedefs/cblsubtypes.d.ts" />
 
 import Emitter = require('./cblemitter');

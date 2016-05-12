@@ -10,8 +10,7 @@
 
 @synthesize liteURL;
 
-- (void) pluginInitialize {
-    // Initialization code here
+- (void)pluginInitialize {
     [self launchCouchbaseLite];
 }
 
@@ -20,7 +19,6 @@
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
-
 
 - (void)launchCouchbaseLite
 {
