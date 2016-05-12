@@ -1,3 +1,4 @@
+/// <reference path="../../../../typedefs/tsd.d.ts" />
 ///<reference path="typedefs/cblsubtypes.d.ts" />
 
 import Emitter = require('./cblemitter');
@@ -292,10 +293,11 @@ class cblDB {
 
     replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
             bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
             var uri = new URI(this.localServerUrl).segment('_replicate');
-            this.processRequest('POST', uri.toString(), bodyRequest, null,
+            this.processRequest('POST', uri.toString(), bodyRequest, headers,
                 (err, response)=> {
                     if (err) reject(this.buildError('Error From replicate from Request', err));
                     else resolve(response);
@@ -305,10 +307,11 @@ class cblDB {
 
     replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
+            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
             bodyRequest = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
             var uri = new URI(this.localServerUrl).segment('_replicate');
-            this.processRequest('POST', uri.toString(), bodyRequest, null,
+            this.processRequest('POST', uri.toString(), bodyRequest, headers,
                 (err, response)=> {
                     if (err) reject(this.buildError('Error From replicate to Request', err));
                     else resolve(response);
