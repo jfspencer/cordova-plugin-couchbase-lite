@@ -1,9 +1,8 @@
 /// <reference path="cblsubtypes.d.ts" />
 /// <reference path="cblemitter.d.ts" />
 
-
 declare module cblDB {
-
+    
     interface instance {
         dbName:string;
         dbUrl:string;
