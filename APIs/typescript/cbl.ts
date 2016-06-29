@@ -1,4 +1,3 @@
-/// <reference path="../../../../typedefs/tsd.d.ts" />
 ///<reference path="typedefs/cblsubtypes.d.ts" />
 
 import Emitter = require('./cblemitter');
@@ -84,35 +83,19 @@ class cblDB {
         });
     }
 
-    changes(params?:cbl.IGetDbChangesParams):Promise<void> {
+    changes(params?:cbl.IGetDbChangesParams):Promise<any> {
         return this.info()
             .then((info:cbl.IGetDbChangesResponse)=> {
-                if(this.lastChange === 0) this.lastChange = info.update_seq > 0 ? info.update_seq - 1 : 0;
+                if (this.lastChange === 0) this.lastChange = info.update_seq > 0 ? info.update_seq - 1 : 0;
                 if (params.since === 'now') {
                     params.since = this.lastChange;
                 }
                 this.lastChange = info.update_seq;
 
-                /* EventSource Style changes, when android supports event source properly turn this on
-                 if (!params)params = {feed: 'eventsource'};
-                 else params.feed = 'eventsource';
-                 var emitter = new Emitter();
-                 var uri = new URI(this.dbUrl).segment('_changes').search(params);
-                 var source = new EventSource(uri.toString());
-                 source.onerror = (e) => { emitter.emit('error', JSON.parse(e.data)); };
-                 source.onmessage = (e) => {emitter.emit('change', JSON.parse(e.data)); };
-                 emitter.cancel = () => {
-                 source.close();
-                 emitter.emit('complete');
-                 emitter.removeAllListeners();
-                 };
-                 return emitter;
-                 */
-
                 if (!params)params = {feed: 'normal'};
                 else params.feed = 'normal';
                 var uri = new URI(this.dbUrl).segment('_changes').search(params);
-                return new Promise((resolve, reject)=>{
+                return new Promise((resolve, reject)=> {
                     this.processRequest('GET', uri.toString(), null, null,
                         (err, success)=> {
                             if (err) reject(this.buildError('Error From _changes request', err));
@@ -197,7 +180,7 @@ class cblDB {
     post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl);
-            if (_.includes(params.batch,'ok')) uri.search({batch: 'ok'});
+            if (_.includes(params.batch, 'ok')) uri.search({batch: 'ok'});
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             this.processRequest('POST', uri.toString(), doc, headers,
                 (err, success)=> {
@@ -250,36 +233,38 @@ class cblDB {
             var uri = new URI(this.dbUrl).segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]);
             var fullURI = uri.toString();
             var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
-            if(params){
+            if (params) {
                 if (params.keys) {
                     verb = 'POST';
                     data = params;
                 }
                 else {
-                    if(params.start_key) params.startkey = params.start_key;
-                    if(params.end_key) params.endkey = params.end_key;
+                    if (params.start_key) params.startkey = params.start_key;
+                    if (params.end_key) params.endkey = params.end_key;
                     requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
                     requestParams.update_seq = true;
-                    if(params.key){
-                        if(_.isArray(params.key)) jsonParams.push('key=' + JSON.stringify(params.key));
-                        else if(_.isString) jsonParams.push('key="' + params.key + '"');
-                        else if(_.isNumber) jsonParams.push('key=' + params.key);
+                    if (params.key) {
+                        if (_.isArray(params.key)) jsonParams.push('key=' + JSON.stringify(params.key));
+                        else if (_.isString) jsonParams.push('key="' + params.key + '"');
+                        else if (_.isNumber) jsonParams.push('key=' + params.key);
                         requestParams = _.omit(requestParams, 'key');
                     }
-                    if(params.startkey){
-                        if(_.isArray(params.startkey)) jsonParams.push('startkey=' + JSON.stringify(params.startkey));
-                        else if(_.isString) jsonParams.push('startkey="' + params.startkey + '"');
-                        else if(_.isNumber) jsonParams.push('startkey=' + params.startkey);
-                        requestParams = _.omit(requestParams, ['startkey','start_key']);
+                    if (params.startkey || _.isNull(params.startkey)) {
+                        if (_.isArray(params.startkey)) jsonParams.push('startkey=' + JSON.stringify(params.startkey));
+                        else if (_.isString(params.startkey)) jsonParams.push('startkey="' + params.startkey + '"');
+                        else if (_.isNumber(params.startkey)) jsonParams.push('startkey=' + params.startkey);
+                        else if (_.isObject(params.startkey) || _.isNull(params.startkey)) jsonParams.push('startkey=' + JSON.stringify(params.startkey));
+                        requestParams = _.omit(requestParams, ['startkey', 'start_key']);
                     }
-                    if(params.endkey){
-                        if(_.isArray(params.endkey)) jsonParams.push('endkey=' + JSON.stringify(params.endkey));
-                        else if(_.isString) jsonParams.push('endkey="' + params.endkey + '"');
-                        else if(_.isNumber) jsonParams.push('endkey=' + params.endkey);
-                        requestParams = _.omit(requestParams, ['endkey','end_key']);
+                    if (params.endkey || _.isNull(params.startkey)) {
+                        if (_.isArray(params.endkey)) jsonParams.push('endkey=' + JSON.stringify(params.endkey));
+                        else if (_.isString(params.endkey)) jsonParams.push('endkey="' + params.endkey + '"');
+                        else if (_.isNumber(params.endkey)) jsonParams.push('endkey=' + params.endkey);
+                        else if (_.isObject(params.endkey) || _.isNull(params.endkey)) jsonParams.push('endkey=' + JSON.stringify(params.endkey));
+                        requestParams = _.omit(requestParams, ['endkey', 'end_key']);
                     }
                     fullURI = uri.search(requestParams).toString();
-                    _.each(jsonParams, (param)=>{ fullURI += '&' + param; })
+                    _.each(jsonParams, (param)=> { fullURI += '&' + param; })
                 }
             }
 
@@ -294,12 +279,12 @@ class cblDB {
     replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
+            if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
             bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
             var uri = new URI(this.localServerUrl).segment('_replicate');
             this.processRequest('POST', uri.toString(), bodyRequest, headers,
                 (err, response)=> {
-                    if (err) reject(this.buildError('Error From replicate from Request', err));
+                    if (err) reject(this.buildError('Error: replicate to Request', err));
                     else resolve(response);
                 });
         });
@@ -308,12 +293,12 @@ class cblDB {
     replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
+            if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
             bodyRequest = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
             var uri = new URI(this.localServerUrl).segment('_replicate');
             this.processRequest('POST', uri.toString(), bodyRequest, headers,
                 (err, response)=> {
-                    if (err) reject(this.buildError('Error From replicate to Request', err));
+                    if (err) reject(this.buildError('Error: replicate from Request', err));
                     else resolve(response);
                 });
         });
