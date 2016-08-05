@@ -7,6 +7,7 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaInterface;
 import org.json.JSONArray;
+import org.json.JSONException;
 
 import com.couchbase.lite.android.AndroidContext;
 import com.couchbase.lite.Database;
@@ -14,6 +15,7 @@ import com.couchbase.lite.Manager;
 import com.couchbase.lite.listener.LiteListener;
 import com.couchbase.lite.listener.LiteServlet;
 import com.couchbase.lite.listener.Credentials;
+import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.router.URLStreamHandlerFactory;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
@@ -22,13 +24,15 @@ import com.couchbase.lite.util.Log;
 
 import java.io.IOException;
 import java.io.File;
+import java.util.List;
 
 public class CBLite extends CordovaPlugin {
 
 	private static final int DEFAULT_LISTEN_PORT = 5984;
 	private boolean initFailed = false;
 	private int listenPort;
-    private Credentials allowedCredentials;
+	private Credentials allowedCredentials;
+	private Manager server = null;
 
 	/**
 	 * Constructor.
@@ -49,14 +53,14 @@ public class CBLite extends CordovaPlugin {
 	private void initCBLite() {
 		try {
 
-		    allowedCredentials = new Credentials();
+			allowedCredentials = new Credentials();
 
 			URLStreamHandlerFactory.registerSelfIgnoreError();
 
 			View.setCompiler(new JavaScriptViewCompiler());
 			Database.setFilterCompiler(new JavaScriptReplicationFilterCompiler());
 
-			Manager server = startCBLite(this.cordova.getActivity());
+			server = startCBLite(this.cordova.getActivity());
 
 			listenPort = startCBLListener(DEFAULT_LISTEN_PORT, server, allowedCredentials);
 
@@ -71,8 +75,28 @@ public class CBLite extends CordovaPlugin {
 	}
 
 	@Override
-	public boolean execute(String action, JSONArray args,
-			CallbackContext callback) {
+	public boolean execute(String action, JSONArray args, CallbackContext callback) {
+		if(action.equals("stopReplication")){
+			try{
+				Database currentDB = server.getExistingDatabase(args.getString(0));
+				if(currentDB != null){
+					List<Replication> activeReplications = currentDB.getActiveReplications();
+					for(Replication replication: activeReplications){
+						replication.stop();
+					}
+					callback.success("true");
+				}
+				else{
+					System.out.println("could not stop replication, database does not exist");
+					callback.error("false");
+				}
+			}catch(final Exception e){
+				System.out.println("could not stop replication");
+				e.printStackTrace();
+				callback.error(e.getMessage());
+			}
+
+		}
 		if (action.equals("getURL")) {
 			try {
 
@@ -82,10 +106,10 @@ public class CBLite extends CordovaPlugin {
 				} else {
 					String callbackRespone = String.format(
 							"http://%s:%s@localhost:%d/",
-                            allowedCredentials.getLogin(),
-                            allowedCredentials.getPassword(),
-                            listenPort
-                    );
+							allowedCredentials.getLogin(),
+							allowedCredentials.getPassword(),
+							listenPort
+					);
 
 					callback.success(callbackRespone);
 
@@ -103,7 +127,7 @@ public class CBLite extends CordovaPlugin {
 	protected Manager startCBLite(Context context) {
 		Manager manager;
 		try {
-		        Manager.enableLogging(Log.TAG, Log.VERBOSE);
+			Manager.enableLogging(Log.TAG, Log.VERBOSE);
 			Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
 			Manager.enableLogging(Log.TAG_QUERY, Log.VERBOSE);
 			Manager.enableLogging(Log.TAG_VIEW, Log.VERBOSE);
@@ -115,7 +139,7 @@ public class CBLite extends CordovaPlugin {
 			Manager.enableLogging(Log.TAG_REMOTE_REQUEST, Log.VERBOSE);
 			Manager.enableLogging(Log.TAG_ROUTER, Log.VERBOSE);
 			manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
-			
+
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -136,9 +160,7 @@ public class CBLite extends CordovaPlugin {
 		System.out.println("CBLite.onResume() called");
 	}
 
-	public void onPause(boolean multitasking) {
-		System.out.println("CBLite.onPause() called");
-	}
+	public void onPause(boolean multitasking) { System.out.println("CBLite.onPause() called"); }
 
 
 }

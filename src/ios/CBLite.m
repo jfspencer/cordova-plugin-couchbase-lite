@@ -1,14 +1,17 @@
 #import "CBLite.h"
 
 #import "CouchbaseLite.h"
+#import "CBLManager.h"
 #import "CBLListener.h"
 #import "CBLRegisterJSViewCompiler.h"
+#import "CBLReplication.h"
 
 #import <Cordova/CDV.h>
 
 @implementation CBLite
 
 @synthesize liteURL;
+@synthesize dbmgr;
 
 - (void)pluginInitialize {
     [self launchCouchbaseLite];
@@ -20,10 +23,29 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
+- (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand
+{
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    NSError *error;
+    CBLDatabase *database = [dbmgr existingDatabaseNamed: dbName error: &error];
+    if (database != nil) {
+        NSArray<CBLReplication *> *replications = database.allReplications;
+        for (CBLReplication *replication in replications) {
+            [replication stop];
+        }
+    }
+    else{
+        NSLog(@"could not stop replication");
+    }
+
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
 - (void)launchCouchbaseLite
 {
     NSLog(@"Launching Couchbase Lite...");
-    CBLManager* dbmgr = [CBLManager sharedInstance];
+    dbmgr = [CBLManager sharedInstance];
     CBLRegisterJSViewCompiler();
 #if 1
     // Couchbase Lite 1.0's CBLRegisterJSViewCompiler function doesn't register the filter compiler
