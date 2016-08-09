@@ -42,7 +42,7 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
-- (void)close
+- (void)closeManager
 {
     if(dbmgr != nil){
         [dbmgr close];

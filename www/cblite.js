@@ -7,7 +7,7 @@ function getServerURL(success, failure) {
         }, "CBLite", "getURL", []);
 }
 
-function close(success, failure) {
+function closeManager(success, failure) {
     cordova.exec(
         function (url) {
             success(url);
@@ -16,7 +16,7 @@ function close(success, failure) {
             failure(err);
         },
         "CBLite",
-        "close",
+        "closeManager",
         []);
 }
 
@@ -50,5 +50,5 @@ module.exports = {
     getServerURL: getServerURL,
     stopReplication: stopReplication,
     launchCouchbaseLite:launchCouchbaseLite,
-    close:close
+    closeManager:closeManager
 };

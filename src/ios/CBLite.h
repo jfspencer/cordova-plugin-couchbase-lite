@@ -9,7 +9,7 @@
 - (void)getURL:(CDVInvokedUrlCommand*)urlCommand;
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand;
 - (void)launchCouchbaseLite;
-- (void)close;
+- (void)closeManager;
 
 @end
 
