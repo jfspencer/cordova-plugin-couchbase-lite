@@ -42,11 +42,21 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
-- (void)closeManager
+- (void)closeManager:(CDVInvokedUrlCommand*)urlCommand
 {
     if(dbmgr != nil){
         [dbmgr close];
     }
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
+-(void)relaunchManager:(CDVInvokedUrlCommand *)urlCommand{
+
+    [self launchCouchbaseLite];
+
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
 - (void)launchCouchbaseLite

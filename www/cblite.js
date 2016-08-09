@@ -20,7 +20,7 @@ function closeManager(success, failure) {
         []);
 }
 
-function launchCouchbaseLite(success, failure) {
+function relaunchManager(success, failure) {
     cordova.exec(
         function (url) {
             success(url);
@@ -29,7 +29,7 @@ function launchCouchbaseLite(success, failure) {
             failure(err);
         },
         "CBLite",
-        "launchCouchbaseLite",
+        "relaunchManager",
         []);
 }
 
@@ -49,6 +49,6 @@ function stopReplication(dbName, success, failure) {
 module.exports = {
     getServerURL: getServerURL,
     stopReplication: stopReplication,
-    launchCouchbaseLite:launchCouchbaseLite,
+    relaunchManager:relaunchManager,
     closeManager:closeManager
 };
