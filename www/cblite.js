@@ -7,6 +7,19 @@ function getServerURL(success, failure) {
         }, "CBLite", "getURL", []);
 }
 
+function close(success, failure) {
+    cordova.exec(
+        function (url) {
+            success(url);
+        },
+        function (err) {
+            failure(err);
+        },
+        "CBLite",
+        "close",
+        []);
+}
+
 function launchCouchbaseLite(success, failure) {
     cordova.exec(
         function (url) {
@@ -36,5 +49,6 @@ function stopReplication(dbName, success, failure) {
 module.exports = {
     getServerURL: getServerURL,
     stopReplication: stopReplication,
-    launchCouchbaseLite:launchCouchbaseLite
+    launchCouchbaseLite:launchCouchbaseLite,
+    close:close
 };

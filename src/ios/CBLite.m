@@ -42,6 +42,13 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
+- (void)close
+{
+    if(dbmgr != nil){
+        [dbmgr close];
+    }
+}
+
 - (void)launchCouchbaseLite
 {
 
