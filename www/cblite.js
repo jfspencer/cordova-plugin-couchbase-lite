@@ -35,5 +35,6 @@ function stopReplication(dbName, success, failure) {
 
 module.exports = {
     getServerURL: getServerURL,
-    stopReplication: stopReplication
+    stopReplication: stopReplication,
+    launchCouchbaseLite:launchCouchbaseLite
 };
