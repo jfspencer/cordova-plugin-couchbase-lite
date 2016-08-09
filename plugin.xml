@@ -7,7 +7,6 @@
     <js-module src="www/cblite.js" name="CouchbaseLite">
         <clobbers target="cbl"/>
     </js-module>
-    <asset src="www/cblite-example.html" target="cblite-example.html"/>
     <engines>
         <engine name="cordova" version=">=3.9.0"/>
     </engines>
