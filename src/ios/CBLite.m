@@ -44,6 +44,10 @@
 
 - (void)launchCouchbaseLite
 {
+
+    if(dbmgr != nil){
+        [dbmgr close];
+    }
     NSLog(@"Launching Couchbase Lite...");
     dbmgr = [CBLManager sharedInstance];
     CBLRegisterJSViewCompiler();
