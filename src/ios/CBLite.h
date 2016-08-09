@@ -8,8 +8,8 @@
 
 - (void)getURL:(CDVInvokedUrlCommand*)urlCommand;
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand;
-- (void)launchCouchbaseLite:(CDVInvokedUrlCommand*)urlCommand;
-- (void)close:(CDVInvokedUrlCommand*)urlCommand;
+- (void)launchCouchbaseLite;
+- (void)close;
 
 @end
 

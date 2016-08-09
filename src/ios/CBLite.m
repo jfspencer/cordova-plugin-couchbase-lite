@@ -51,7 +51,6 @@
 
 - (void)launchCouchbaseLite
 {
-
     if(dbmgr != nil){
         [dbmgr close];
     }
