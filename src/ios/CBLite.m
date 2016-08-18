@@ -23,6 +23,33 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
+
+
+- (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand
+{
+    CDVPluginResult* pluginResult = nil;
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    NSError *error;
+    CBLDatabase *database = [dbmgr existingDatabaseNamed: dbName error: &error];
+    if (database != nil) {
+        int replCount = 0;
+        NSArray<CBLReplication *> *replications = database.allReplications;
+        for (CBLReplication *replication in replications) {
+            replCount += 1;
+        }
+        if(replCount > 0){
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+        }else{
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"false"];
+        }
+    }
+    else{
+        NSLog(@"could not stop replication");
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"false"];
+    }
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand
 {
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];

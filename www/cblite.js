@@ -7,6 +7,19 @@ function getServerURL(success, failure) {
         }, "CBLite", "getURL", []);
 }
 
+function isReplicating(dbName, success, failure) {
+    cordova.exec(
+        function (url) {
+            success(url);
+        },
+        function (err) {
+            failure(err);
+        },
+        "CBLite",
+        "isReplicating",
+        [dbName]);
+}
+
 function closeManager(success, failure) {
     cordova.exec(
         function (url) {
@@ -47,8 +60,9 @@ function stopReplication(dbName, success, failure) {
 }
 
 module.exports = {
+    closeManager:closeManager,
     getServerURL: getServerURL,
+    isReplicating:isReplicating,
     stopReplication: stopReplication,
-    relaunchManager:relaunchManager,
-    closeManager:closeManager
+    relaunchManager:relaunchManager
 };

@@ -77,52 +77,92 @@ public class CBLite extends CordovaPlugin {
 	@Override
 	public boolean execute(String action, JSONArray args, CallbackContext callback) {
 		if(action.equals("stopReplication")){
-			try{
-				Database currentDB = server.getExistingDatabase(args.getString(0));
-				if(currentDB != null){
-					List<Replication> activeReplications = currentDB.getActiveReplications();
-					for(Replication replication: activeReplications){
-						replication.stop();
-					}
-					callback.success("true");
-				}
-				else{
-					System.out.println("could not stop replication, database does not exist");
-					callback.error("false");
-				}
-			}catch(final Exception e){
-				System.out.println("could not stop replication");
-				e.printStackTrace();
-				callback.error(e.getMessage());
-			}
-
+			stopReplication(args, callback);
+			return true;
+		}
+		if (action.equals("isReplicating")) {
+			isReplicating(args, callback);
+			return true;
 		}
 		if (action.equals("getURL")) {
-			try {
-
-				if (initFailed == true) {
-					callback.error("Failed to initialize couchbase lite.  See console logs");
-					return false;
-				} else {
-					String callbackRespone = String.format(
-							"http://%s:%s@localhost:%d/",
-							allowedCredentials.getLogin(),
-							allowedCredentials.getPassword(),
-							listenPort
-					);
-
-					callback.success(callbackRespone);
-
-					return true;
-				}
-
-			} catch (final Exception e) {
-				e.printStackTrace();
-				callback.error(e.getMessage());
-			}
+			getURUL(args, callback);
+			return true;
 		}
 		return false;
 	}
+
+	protected boolean getURUL(JSONArray args, CallbackContext callback){
+		try {
+
+			if (initFailed) {
+				callback.error("Failed to initialize couchbase lite.  See console logs");
+				return false;
+			} else {
+				String callbackRespone = String.format(
+						"http://%s:%s@localhost:%d/",
+						allowedCredentials.getLogin(),
+						allowedCredentials.getPassword(),
+						listenPort
+				);
+
+				callback.success(callbackRespone);
+				return true;
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			callback.error(e.getMessage());
+			return false;
+		}
+	}
+
+	protected void isReplicating(JSONArray args, CallbackContext callback){
+		try{
+			Database currentDB = server.getExistingDatabase(args.getString(0));
+			if(currentDB != null){
+				int replicationCount = 0;
+				List<Replication> activeReplications = currentDB.getActiveReplications();
+				for(Replication replication: activeReplications){
+					replicationCount += 1;
+				}
+				if(replicationCount > 0){
+					callback.success("true");
+				}
+				else {
+					callback.success("false");
+				}
+			}
+			else{
+				System.out.println("could not stop replication, database does not exist");
+				callback.error("false");
+			}
+		}catch(final Exception e){
+			System.out.println("could not stop replication");
+			e.printStackTrace();
+			callback.error(e.getMessage());
+		}
+	}
+
+	protected void stopReplication(JSONArray args, CallbackContext callback){
+		try{
+			Database currentDB = server.getExistingDatabase(args.getString(0));
+			if(currentDB != null){
+				List<Replication> activeReplications = currentDB.getActiveReplications();
+				for(Replication replication: activeReplications){
+					replication.stop();
+				}
+				callback.success("true");
+			}
+			else{
+				System.out.println("could not stop replication, database does not exist");
+				callback.error("false");
+			}
+		}catch(final Exception e){
+			System.out.println("could not stop replication");
+			e.printStackTrace();
+			callback.error(e.getMessage());
+		}
+	}
+
 
 	protected Manager startCBLite(Context context) {
 		Manager manager;

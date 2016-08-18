@@ -10,6 +10,7 @@
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand;
 - (void)relaunchManager:(CDVInvokedUrlCommand*)urlCommand;;
 - (void)closeManager:(CDVInvokedUrlCommand*)urlCommand;
+- (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand;
 
 @end
 

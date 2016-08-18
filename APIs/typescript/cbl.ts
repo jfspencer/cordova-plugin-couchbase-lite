@@ -30,7 +30,7 @@ class cblDB {
                     this.processRequest('PUT', this.dbUrl.toString(), null, null,
                         (err, response)=> {
                             if (err.status == 412) resolve(err.response);
-                            else if (response.ok) resolve(true);
+                            else if (response) resolve(true);
                             else if (err) reject(this.buildError('Error From DB PUT Request with status: ' + err.status, err));
                             else reject(this.buildError('Unknown Error From DB PUT Request', {
                                     res: response,
@@ -72,10 +72,10 @@ class cblDB {
         });
     }
 
-    bulkDocs(docs:cbl.IPostDbBulkDocs) {
+    bulkDocs(body:cbl.IPostDbBulkDocs) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl).segment('_bulk_docs');
-            this.processRequest('POST', uri.toString(), docs, null,
+            this.processRequest('POST', uri.toString(), body, null,
                 (err, success)=> {
                     if (err) reject(this.buildError('Error From bulkDocs Request, ensure docs array is in request', err));
                     else resolve(success);
@@ -279,8 +279,12 @@ class cblDB {
     replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
-            bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
+            //options override the default behavior
+            if(!bodyRequest){
+                if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
+                bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
+            }
+
             var uri = new URI(this.localServerUrl).segment('_replicate');
             this.processRequest('POST', uri.toString(), bodyRequest, headers,
                 (err, response)=> {
@@ -293,8 +297,12 @@ class cblDB {
     replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
         return new Promise((resolve, reject)=> {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
-            bodyRequest = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
+            //options override the default behavior
+            if(!bodyRequest){
+                if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
+                bodyRequest = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
+            }
+
             var uri = new URI(this.localServerUrl).segment('_replicate');
             this.processRequest('POST', uri.toString(), bodyRequest, headers,
                 (err, response)=> {
