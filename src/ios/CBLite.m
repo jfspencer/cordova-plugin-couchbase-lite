@@ -12,7 +12,6 @@
 
 @synthesize liteURL;
 @synthesize dbmgr;
-@synthesize primaryDB;
 
 - (void)pluginInitialize {
     [self launchCouchbaseLite];
@@ -29,12 +28,10 @@
     CDVPluginResult* pluginResult = nil;
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
     
-    [self updatePrimaryDB:dbName:urlCommand];
-    
-    if (primaryDB != nil) {
+    CBLDatabase *db = [self getDB:dbName];
+    if (db != nil) {
         int replCount = 0;
-        NSArray<CBLReplication *> *replications = primaryDB.allReplications;
-        for (CBLReplication *r in replications) {
+        for (CBLReplication *r in db.allReplications) {
             replCount += 1;
         }
         if(replCount > 0){
@@ -53,12 +50,12 @@
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand
 {
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-    [self updatePrimaryDB:dbName:urlCommand];
+    [self getDB:dbName];
     
-    if (primaryDB != nil) {
-        NSArray<CBLReplication *> *replications = primaryDB.allReplications;
-        for (CBLReplication *replication in replications) {
-            [replication stop];
+    CBLDatabase *db = [self getDB:dbName];
+    if (db != nil) {
+        for (CBLReplication *r in db.allReplications) {
+            [r stop];
         }
     }
     else{
@@ -69,17 +66,15 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
-- (void)updatePrimaryDB:(NSString *)dbName : (CDVInvokedUrlCommand*)urlCommand
+- (CBLDatabase*)getDB:(NSString *)dbName
 {
     NSError *error;
-    if(primaryDB == nil){
-        primaryDB = [dbmgr existingDatabaseNamed: dbName error: &error];
-    }
+    CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
     
-    if([primaryDB.name isEqualToString:dbName] == false){
-        primaryDB = nil;
-        primaryDB = [dbmgr existingDatabaseNamed: dbName error: &error];
+    if(db == nil){
+        return nil;
     }
+    else return db;
 }
 
 - (void)closeManager:(CDVInvokedUrlCommand*)urlCommand

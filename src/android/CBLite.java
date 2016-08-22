@@ -33,7 +33,6 @@ public class CBLite extends CordovaPlugin {
 	private int listenPort;
 	private Credentials allowedCredentials;
 	private Manager server = null;
-	private Database primaryDB = null;
 
 	/**
 	 * Constructor.
@@ -119,12 +118,11 @@ public class CBLite extends CordovaPlugin {
 	protected void isReplicating(JSONArray args, CallbackContext callback){
 
 		try{
-			updatePrimaryDB(args.getString(0), callback);
+			Database db = getDB(args.getString(0), callback);
 
-			if(primaryDB != null){
+			if(db != null){
 				int replicationCount = 0;
-				List<Replication> activeReplications = primaryDB.getActiveReplications();
-				for(Replication replication: activeReplications){
+				for(Replication r: db.getActiveReplications()){
 					replicationCount += 1;
 				}
 				if(replicationCount > 0){
@@ -147,10 +145,9 @@ public class CBLite extends CordovaPlugin {
 
 	protected void stopReplication(JSONArray args, CallbackContext callback){
 		try{
-			updatePrimaryDB(args.getString(0), callback);
-			if(primaryDB != null){
-				List<Replication> activeReplications = primaryDB.getActiveReplications();
-				for(Replication replication: activeReplications){
+			Database db = getDB(args.getString(0), callback);
+			if(db != null){
+				for(Replication replication: db.getAllReplications()){
 					replication.stop();
 				}
 				callback.success("true");
@@ -189,21 +186,20 @@ public class CBLite extends CordovaPlugin {
 		return manager;
 	}
 
-	private void updatePrimaryDB(String dbName, CallbackContext callback){
+	private Database getDB(String dbName, CallbackContext callback){
 		try{
-			if(primaryDB == null){
-				primaryDB = server.getExistingDatabase(dbName);
+			Database db = server.getExistingDatabase(dbName);
+
+			if(db == null){
+				return null;
 			}
-			if(primaryDB.getName().equals(dbName) == false){
-				primaryDB = null;
-				primaryDB = server.getExistingDatabase(dbName);
-			}
+			else return db;
 		}catch(final Exception e){
 			System.out.println("could not stop replication");
 			e.printStackTrace();
 			callback.error(e.getMessage());
 		}
-
+		return null;
 	}
 
 	private int startCBLListener(int listenPort, Manager manager, Credentials allowedCredentials) {
