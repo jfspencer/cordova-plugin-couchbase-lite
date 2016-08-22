@@ -33,6 +33,7 @@ public class CBLite extends CordovaPlugin {
 	private int listenPort;
 	private Credentials allowedCredentials;
 	private Manager server = null;
+	private Database primaryDB = null;
 
 	/**
 	 * Constructor.
@@ -116,11 +117,13 @@ public class CBLite extends CordovaPlugin {
 	}
 
 	protected void isReplicating(JSONArray args, CallbackContext callback){
+
 		try{
-			Database currentDB = server.getExistingDatabase(args.getString(0));
-			if(currentDB != null){
+			updatePrimaryDB(args.getString(0), callback);
+
+			if(primaryDB != null){
 				int replicationCount = 0;
-				List<Replication> activeReplications = currentDB.getActiveReplications();
+				List<Replication> activeReplications = primaryDB.getActiveReplications();
 				for(Replication replication: activeReplications){
 					replicationCount += 1;
 				}
@@ -144,9 +147,9 @@ public class CBLite extends CordovaPlugin {
 
 	protected void stopReplication(JSONArray args, CallbackContext callback){
 		try{
-			Database currentDB = server.getExistingDatabase(args.getString(0));
-			if(currentDB != null){
-				List<Replication> activeReplications = currentDB.getActiveReplications();
+			updatePrimaryDB(args.getString(0), callback);
+			if(primaryDB != null){
+				List<Replication> activeReplications = primaryDB.getActiveReplications();
 				for(Replication replication: activeReplications){
 					replication.stop();
 				}
@@ -184,6 +187,23 @@ public class CBLite extends CordovaPlugin {
 			throw new RuntimeException(e);
 		}
 		return manager;
+	}
+
+	private void updatePrimaryDB(String dbName, CallbackContext callback){
+		try{
+			if(primaryDB == null){
+				primaryDB = server.getExistingDatabase(dbName);
+			}
+			if(primaryDB.getName().equals(dbName) == false){
+				primaryDB = null;
+				primaryDB = server.getExistingDatabase(dbName);
+			}
+		}catch(final Exception e){
+			System.out.println("could not stop replication");
+			e.printStackTrace();
+			callback.error(e.getMessage());
+		}
+
 	}
 
 	private int startCBLListener(int listenPort, Manager manager, Credentials allowedCredentials) {

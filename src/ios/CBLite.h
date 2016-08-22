@@ -5,6 +5,7 @@
 
 @property (nonatomic, strong) NSURL *liteURL;
 @property (nonatomic, strong) CBLManager *dbmgr;
+@property (nonatomic, strong) CBLDatabase *primaryDB;
 
 - (void)getURL:(CDVInvokedUrlCommand*)urlCommand;
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand;

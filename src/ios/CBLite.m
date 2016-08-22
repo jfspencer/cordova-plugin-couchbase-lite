@@ -12,6 +12,7 @@
 
 @synthesize liteURL;
 @synthesize dbmgr;
+@synthesize primaryDB;
 
 - (void)pluginInitialize {
     [self launchCouchbaseLite];
@@ -23,18 +24,17 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
-
-
 - (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand
 {
     CDVPluginResult* pluginResult = nil;
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-    NSError *error;
-    CBLDatabase *database = [dbmgr existingDatabaseNamed: dbName error: &error];
-    if (database != nil) {
+    
+    [self updatePrimaryDB:dbName:urlCommand];
+    
+    if (primaryDB != nil) {
         int replCount = 0;
-        NSArray<CBLReplication *> *replications = database.allReplications;
-        for (CBLReplication *replication in replications) {
+        NSArray<CBLReplication *> *replications = primaryDB.allReplications;
+        for (CBLReplication *r in replications) {
             replCount += 1;
         }
         if(replCount > 0){
@@ -44,7 +44,7 @@
         }
     }
     else{
-        NSLog(@"could not stop replication");
+        NSLog(@"could not determine replication state");
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"false"];
     }
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
@@ -53,10 +53,10 @@
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand
 {
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-    NSError *error;
-    CBLDatabase *database = [dbmgr existingDatabaseNamed: dbName error: &error];
-    if (database != nil) {
-        NSArray<CBLReplication *> *replications = database.allReplications;
+    [self updatePrimaryDB:dbName:urlCommand];
+    
+    if (primaryDB != nil) {
+        NSArray<CBLReplication *> *replications = primaryDB.allReplications;
         for (CBLReplication *replication in replications) {
             [replication stop];
         }
@@ -67,6 +67,19 @@
 
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
+- (void)updatePrimaryDB:(NSString *)dbName : (CDVInvokedUrlCommand*)urlCommand
+{
+    NSError *error;
+    if(primaryDB == nil){
+        primaryDB = [dbmgr existingDatabaseNamed: dbName error: &error];
+    }
+    
+    if([primaryDB.name isEqualToString:dbName] == false){
+        primaryDB = nil;
+        primaryDB = [dbmgr existingDatabaseNamed: dbName error: &error];
+    }
 }
 
 - (void)closeManager:(CDVInvokedUrlCommand*)urlCommand
