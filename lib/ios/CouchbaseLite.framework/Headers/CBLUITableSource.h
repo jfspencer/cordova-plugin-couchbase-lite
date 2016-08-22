@@ -17,8 +17,11 @@ NS_ASSUME_NONNULL_BEGIN
     query results change when the database is updated.
     A CBLUITableSource can be created in a nib. If so, its tableView outlet should be wired up to
     the UITableView it manages, and the table view's dataSource outlet should be wired to it. */
-@interface CBLUITableSource : NSObject <UITableViewDataSource, UIDataSourceModelAssociation>
-
+@interface CBLUITableSource : NSObject <UITableViewDataSource
+#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 60000)
+                                                            , UIDataSourceModelAssociation
+#endif
+                                                                                          >
 /** The table view to manage. */
 @property (nonatomic, retain) IBOutlet UITableView* tableView;
 
@@ -49,13 +52,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark Displaying The Table:
 
-/** Animation used when inserting new rows; default is UITableViewRowAnimationAutomatic. */
-@property (nonatomic) UITableViewRowAnimation rowInsertAnimation;
-/** Animation used when deleting rows; default is UITableViewRowAnimationAutomatic. */
-@property (nonatomic) UITableViewRowAnimation rowDeleteAnimation;
-/** Animation used when replacing rows; default is UITableViewRowAnimationAutomatic. */
-@property (nonatomic) UITableViewRowAnimation rowReplaceAnimation;
-
 /** If non-nil, specifies the property name of the query row's value that will be used for the table row's visible label.
     If the row's value is not a dictionary, or if the property doesn't exist, the property will next be looked up in the document's properties.
     If this doesn't meet your needs for labeling rows, you should implement -couchTableSource:willUseCell:forRow: in the table's delegate. */
@@ -64,7 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark Editing The Table:
 
-/** Is the user allowed to delete rows by UI gestures? (Defaults to NO.) */
+/** Is the user allowed to delete rows by UI gestures? (Defaults to YES.) */
 @property (nonatomic) BOOL deletionAllowed;
 
 /** Deletes the documents at the given row indexes, animating the removal from the table. */
@@ -82,16 +78,10 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol CBLUITableDelegate <UITableViewDelegate>
 @optional
 
-
-/** Called from -tableView:cellForRowAtIndexPath: just before it returns, giving the delegate a chance to customize the new cell. */
-- (void)couchTableSource:(CBLUITableSource*)source
-             willUseCell:(UITableViewCell*)cell
-                  forRow:(CBLQueryRow*)row;
-
-/** Allows delegate to create its own custom cell, just like -tableView:cellForRowAtIndexPath:.
+/** Allows delegate to return its own custom cell, just like -tableView:cellForRowAtIndexPath:.
     If this returns nil the table source will create its own cell, as if this method were not implemented. */
-- (nullable UITableViewCell *)couchTableSource:(CBLUITableSource*)source
-                         cellForRowAtIndexPath:(NSIndexPath *)indexPath;
+- (UITableViewCell *)couchTableSource:(CBLUITableSource*)source
+                cellForRowAtIndexPath:(NSIndexPath *)indexPath;
 
 /** Called after the query's results change, before the table view is reloaded. */
 - (void)couchTableSource:(CBLUITableSource*)source
@@ -101,6 +91,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)couchTableSource:(CBLUITableSource*)source
          updateFromQuery:(CBLLiveQuery*)query
             previousRows:(CBLArrayOf(CBLQueryRow*) *)previousRows;
+
+/** Called from -tableView:cellForRowAtIndexPath: just before it returns, giving the delegate a chance to customize the new cell. */
+- (void)couchTableSource:(CBLUITableSource*)source
+             willUseCell:(UITableViewCell*)cell
+                  forRow:(CBLQueryRow*)row;
 
 /** Called when the user wants to delete a row.
     If the delegate implements this method, it will be called *instead of* the
