@@ -13,4 +13,3 @@
 - (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand;
 
 @end
-

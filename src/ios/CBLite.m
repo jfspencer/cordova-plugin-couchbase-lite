@@ -28,13 +28,11 @@
     CDVPluginResult* pluginResult = nil;
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
     
-    CBLDatabase *db = [self getDB:dbName];
+    NSError *error;
+    CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
+
     if (db != nil) {
-        int replCount = 0;
-        for (CBLReplication *r in db.allReplications) {
-            replCount += 1;
-        }
-        if(replCount > 0){
+        if([db.allReplications count] > 0){
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
         }else{
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"false"];

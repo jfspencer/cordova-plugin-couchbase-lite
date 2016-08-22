@@ -116,16 +116,10 @@ public class CBLite extends CordovaPlugin {
 	}
 
 	protected void isReplicating(JSONArray args, CallbackContext callback){
-
 		try{
 			Database db = getDB(args.getString(0), callback);
-
 			if(db != null){
-				int replicationCount = 0;
-				for(Replication r: db.getActiveReplications()){
-					replicationCount += 1;
-				}
-				if(replicationCount > 0){
+				if(db.getActiveReplications().size() > 0){
 					callback.success("true");
 				}
 				else {
