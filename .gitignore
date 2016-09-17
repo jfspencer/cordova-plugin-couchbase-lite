@@ -4,3 +4,5 @@ node_modules
 APIs/typescript/cbl.js
 APIs/typescript/cblemitter.js
 APIs/typescript/cblemitter.js
+
+.DS_Store
