@@ -161,7 +161,7 @@ public class CBLite extends CordovaPlugin {
 	protected Manager startCBLite(Context context) {
 		Manager manager;
 		try {
-		        Manager.enableLogging(Log.TAG, Log.VERBOSE);
+			Manager.enableLogging(Log.TAG, Log.VERBOSE);
 			Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
 			Manager.enableLogging(Log.TAG_QUERY, Log.VERBOSE);
 			Manager.enableLogging(Log.TAG_VIEW, Log.VERBOSE);
@@ -173,6 +173,7 @@ public class CBLite extends CordovaPlugin {
 			Manager.enableLogging(Log.TAG_REMOTE_REQUEST, Log.VERBOSE);
 			Manager.enableLogging(Log.TAG_ROUTER, Log.VERBOSE);
 			manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
+
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

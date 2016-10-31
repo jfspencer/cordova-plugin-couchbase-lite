@@ -28,7 +28,6 @@
 #import "CBLQuery+Geo.h"
 #import "CBLQueryBuilder.h"
 #import "CBLAuthenticator.h"
-#import "CBLAuthenticator+OpenID.h"
 #import "CBLReplication.h"
 #import "CBLModel.h"
 #import "CBLModelFactory.h"

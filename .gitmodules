@@ -1,0 +1,3 @@
+[submodule "tests/typeapp"]
+	path = tests/typeapp
+	url = https://github.com/happieio/typeapp.git
