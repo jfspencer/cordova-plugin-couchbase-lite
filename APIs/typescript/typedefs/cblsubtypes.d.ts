@@ -1,17 +1,10 @@
-///<reference path="bluebird/bluebird.d.ts" />
-///<reference path="urijs/URIjs.d.ts" />
-///<reference path="lodash/lodash.d.ts" />
+/// <reference path="../../../../../typedefs/tsd.d.ts" />
 ///<reference path="cbl.d.ts" />
 ///<reference path="eventsource.d.ts" />
 
 
 
 declare var cbl:cbl.IStatic;
-
-// Support AMD require
-declare module 'cbl' {
-    export = cbl;
-}
 
 declare module cbl {
     interface IStatic {
@@ -38,6 +31,8 @@ declare module cbl {
         _id:string;
         _rev?:string;
         _deleted?:boolean;
+        language?:string;
+        views?:any;
     }
 
     interface IGetAllDocsParams {
@@ -160,8 +155,8 @@ declare module cbl {
 
     interface IPostReplicateParams {
         create_target?:boolean; //Indicates whether to create the target DB. Required No
-        source?:string | cblDB.instance; //Id of DB to copy from. Either string of local DB name or remote DB URL, or cblInstance. Required:Yes
-        target?:string | cblDB.instance; //ID of DB to copy to. Same format and interpretation as source. Required:Yes
+        source?:string ; //Id of DB to copy from. Either string of local DB name or remote DB URL, or cblInstance. Required:Yes
+        target?:string ; //ID of DB to copy to. Same format and interpretation as source. Required:Yes
         continuous?:boolean; //Specifies whether the replication should be in continuous mode. Required:No
         replication_id?:string; //used to id a replication for cancellation
         cancel?:boolean; //used to cancel a replication, requires replication_id to be present.

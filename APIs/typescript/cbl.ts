@@ -1,7 +1,8 @@
+/// <reference path="../../../../typedefs/tsd.d.ts" />
 ///<reference path="typedefs/cblsubtypes.d.ts" />
 
 import Emitter = require('./cblemitter');
-import IActiveTaskArray = cbl.IActiveTaskArray;
+import Promise = require('bluebird');
 
 class cblDB {
 
@@ -57,14 +58,17 @@ class cblDB {
     allDocs(params?:cbl.IAllDocsParams) {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
+            var body = null;
             var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
-            if (params.keys) {
+            if (params && params.keys) {
                 verb = 'POST';
+                body = {keys: params.keys};
+                delete params.keys
             }
-            else requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
+            requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
 
             var uri = new URI(this.dbUrl).segment('_all_docs').search(requestParams);
-            this.processRequest(verb, uri.toString(), params, null,
+            this.processRequest(verb, uri.toString(), body, null,
                 (err, success)=> {
                     if (err) reject(this.buildError('Error From allDocs Request', err));
                     else resolve(success);
@@ -280,13 +284,13 @@ class cblDB {
         return new Promise((resolve, reject)=> {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             //options override the default behavior
-            if(!bodyRequest){
-                if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate to: ' + this.dbName));
-                bodyRequest = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
+            var defaults = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
+            if(bodyRequest){
+                _.assign(defaults, bodyRequest);
             }
-
+            if (!defaults.source || !defaults.target) reject(new Error('no sync url available to replicate to: ' + this.dbName));
             var uri = new URI(this.localServerUrl).segment('_replicate');
-            this.processRequest('POST', uri.toString(), bodyRequest, headers,
+            this.processRequest('POST', uri.toString(), defaults, headers,
                 (err, response)=> {
                     if (err) reject(this.buildError('Error: replicate to Request', err));
                     else resolve(response);
@@ -298,13 +302,14 @@ class cblDB {
         return new Promise((resolve, reject)=> {
             var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
             //options override the default behavior
-            if(!bodyRequest){
-                if (!otherDB && !this.syncUrl) reject(new Error('no sync url available to replicate from: ' + this.dbName));
-                bodyRequest = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
+            var defaults = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
+            if(bodyRequest){
+                _.assign(defaults, bodyRequest);
             }
+            if (!defaults.source || !defaults.target) reject(new Error('no sync url available to replicate from: ' + this.dbName));
 
             var uri = new URI(this.localServerUrl).segment('_replicate');
-            this.processRequest('POST', uri.toString(), bodyRequest, headers,
+            this.processRequest('POST', uri.toString(), defaults, headers,
                 (err, response)=> {
                     if (err) reject(this.buildError('Error: replicate from Request', err));
                     else resolve(response);
@@ -407,7 +412,10 @@ class cblDB {
                 if (isAttach) cb(false, http.response);
                 else cb(false, JSON.parse(http.responseText), http);
             }
-            else if (http.readyState == 4 && http.status >= 300) cb({status: http.status, response: http.responseText});
+            else if (http.readyState == 4) cb({status: http.status, response: http.responseText});
+            else if (http.readyState !== 1 && http.readyState !== 2 && http.readyState !== 3){
+                cb({status: http.status, response: http.responseText});
+            }
         };
 
         //send request variations

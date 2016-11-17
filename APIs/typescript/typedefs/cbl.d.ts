@@ -1,8 +1,10 @@
 /// <reference path="cblsubtypes.d.ts" />
 /// <reference path="cblemitter.d.ts" />
+import Promise = require('bluebird');
 
 declare module cblDB {
-    
+
+    import IActiveTaskArray = cbl.IActiveTaskArray;
     interface instance {
         dbName:string;
         dbUrl:string;
@@ -34,3 +36,4 @@ declare module cblDB {
         processRequest(verb, url, data, headers, cb, isAttach?);
     }
 }
+

@@ -1,4 +1,4 @@
-declare var EventSource:IEventSource.instance;
+declare var EventSource: IEventSource.instance;
 
 declare module IEventSource {
 
@@ -9,7 +9,7 @@ declare module IEventSource {
         close():void;
     }
 
-    interface IEventSourceResponse {
+    interface IEventSourceResponse{
         event:string;
         data:any;
         id:string;
