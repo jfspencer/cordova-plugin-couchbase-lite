@@ -1,7 +1,6 @@
 /// <reference path="../../../../typedefs/tsd.d.ts" />
 ///<reference path="typedefs/cblsubtypes.d.ts" />
 
-import Emitter = require('./cblemitter');
 import Promise = require('bluebird');
 
 class cblDB {
