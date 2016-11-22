@@ -6,22 +6,21 @@ import Promise = require('bluebird');
 class cblDB {
 
     dbName = '';
-    lastChange = 0;
 
     static eventTypes = {
         active: 'active', change: 'change', complete: 'complete', denied: 'denied', error: 'error', paused: 'paused'
     };
 
-    dbUrl:string = '';
+    dbUrl: string = '';
     localServerUrl = '';
     syncUrl = '';
 
-    constructor(dbName:string, syncUrl?:string) {
+    constructor(dbName: string, syncUrl?: string) {
         this.dbName = dbName.replace(/[^a-z0-9$_()+-/]/g, '');
         this.syncUrl = syncUrl;
     }
 
-    initDB(syncUrl?:string) {
+    initDB(syncUrl?: string) {
         return new Promise((resolve, reject)=> {
             if (syncUrl) this.syncUrl = syncUrl;
             cbl.getServerURL((url)=> {
@@ -42,7 +41,7 @@ class cblDB {
         });
     }
 
-    activeTasks():any {
+    activeTasks(): any {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
             var uri = new URI(this.localServerUrl).segment('_active_tasks');
@@ -54,11 +53,11 @@ class cblDB {
         });
     }
 
-    allDocs(params?:cbl.IAllDocsParams) {
+    allDocs(params?: cbl.IAllDocsParams) {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
             var body = null;
-            var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
+            var requestParams: cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
             if (params && params.keys) {
                 verb = 'POST';
                 body = {keys: params.keys};
@@ -75,7 +74,7 @@ class cblDB {
         });
     }
 
-    bulkDocs(body:cbl.IPostDbBulkDocs) {
+    bulkDocs(body: cbl.IPostDbBulkDocs) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl).segment('_bulk_docs');
             this.processRequest('POST', uri.toString(), body, null,
@@ -86,27 +85,16 @@ class cblDB {
         });
     }
 
-    changes(params?:cbl.IGetDbChangesParams):Promise<any> {
-        return this.info()
-            .then((info:cbl.IGetDbChangesResponse)=> {
-                if (this.lastChange === 0) this.lastChange = info.update_seq > 0 ? info.update_seq - 1 : 0;
-                if (params.since === 'now') {
-                    params.since = this.lastChange;
-                }
-                this.lastChange = info.update_seq;
-
-                if (!params)params = {feed: 'normal'};
-                else params.feed = 'normal';
-                var uri = new URI(this.dbUrl).segment('_changes').search(params);
-                return new Promise((resolve, reject)=> {
-                    this.processRequest('GET', uri.toString(), null, null,
-                        (err, success)=> {
-                            if (err) reject(this.buildError('Error From _changes request', err));
-                            else resolve(success);
-                        });
-                })
-            })
-            .catch((err)=> { this.buildError('Error From changes request for db info', err) })
+    changes(params?: cbl.IGetDbChangesParams): Promise<any> {
+        if (!params)params = {feed: 'normal'};
+        var uri = new URI(this.dbUrl).segment('_changes').search(params);
+        return new Promise((resolve, reject)=> {
+            this.processRequest('GET', uri.toString(), null, null,
+                (err, success)=> {
+                    if (err) reject(this.buildError('Error From _changes request', err));
+                    else resolve(success);
+                });
+        }).catch((err)=> { this.buildError('Error From changes request for db info', err) })
     }
 
     compact() {
@@ -131,11 +119,11 @@ class cblDB {
         });
     }
 
-    get(docId:string, params?:cbl.IGetDbDocParams) {
+    get(docId: string, params?: cbl.IGetDbDocParams) {
         return new Promise((resolve, reject)=> {
-            var headers:cbl.IHeaders = {'Accept': 'application/json'};
+            var headers: cbl.IHeaders = {'Accept': 'application/json'};
             var uri = new URI(this.dbUrl).segment(docId);
-            var requestParams:cbl.IGetDbDocParams = <cbl.IGetDbDocParams>{};
+            var requestParams: cbl.IGetDbDocParams = <cbl.IGetDbDocParams>{};
             if (params) {
                 requestParams = <cbl.IGetDbDocParams>_.assign(requestParams, params);
                 uri.search(requestParams);
@@ -148,9 +136,9 @@ class cblDB {
         });
     }
 
-    getAttachment(docId:string, attachmentName:string, params?:cbl.IBatchRevParams) {
+    getAttachment(docId: string, attachmentName: string, params?: cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
-            var uri:uri.URI = new URI(this.dbUrl).segment(docId).segment(attachmentName);
+            var uri: uri.URI = new URI(this.dbUrl).segment(docId).segment(attachmentName);
             if (params.rev) uri.search({rev: params.rev});
 
             this.processRequest('GET', uri.toString(), null, null,
@@ -170,7 +158,7 @@ class cblDB {
         });
     }
 
-    infoRemote(remoteDBUrl?:string) {
+    infoRemote(remoteDBUrl?: string) {
         return new Promise((resolve, reject)=> {
             if (!remoteDBUrl) remoteDBUrl = this.syncUrl;
             this.processRequest('GET', remoteDBUrl, null, null, (err, info)=> {
@@ -180,11 +168,11 @@ class cblDB {
         });
     }
 
-    post(doc:cbl.IDoc, params?:cbl.IPostDbDocParams) {
+    post(doc: cbl.IDoc, params?: cbl.IPostDbDocParams) {
         return new Promise((resolve, reject)=> {
             var uri = new URI(this.dbUrl);
             if (_.includes(params.batch, 'ok')) uri.search({batch: 'ok'});
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var headers: cbl.IHeaders = {'Content-Type': 'application/json'};
             this.processRequest('POST', uri.toString(), doc, headers,
                 (err, success)=> {
                     if (err) reject(this.buildError('Error From POST Doc Request', err));
@@ -194,11 +182,11 @@ class cblDB {
     }
 
 
-    put(doc:cbl.IDoc, params?:cbl.IBatchRevParams) {
+    put(doc: cbl.IDoc, params?: cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
             if (!doc._id) reject(this.buildError('doc does not have _id for PUT request', doc));
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            var requestParams:cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
+            var headers: cbl.IHeaders = {'Content-Type': 'application/json'};
+            var requestParams: cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
             if (params) {
                 if (!params.rev) requestParams.rev = doc._rev;
                 requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
@@ -213,9 +201,9 @@ class cblDB {
         });
     }
 
-    putAttachment(docId:string, attachmentId:string, attachment:any, mimeType:string, rev?:string) {
+    putAttachment(docId: string, attachmentId: string, attachment: any, mimeType: string, rev?: string) {
         return new Promise((resolve, reject)=> {
-            var headers:cbl.IHeaders = {'Content-Type': mimeType};
+            var headers: cbl.IHeaders = {'Content-Type': mimeType};
             var uri = new URI(this.dbUrl).segment(docId).segment(attachmentId);
             if (rev) uri.search({rev: rev});
             this.processRequest('PUT', uri.toString(), attachment, headers,
@@ -226,16 +214,16 @@ class cblDB {
         });
     }
 
-    query(view:string, params?:cbl.IDbDesignViewName) {
+    query(view: string, params?: cbl.IDbDesignViewName) {
         return new Promise((resolve, reject)=> {
             var verb = 'GET';
             var data = null;
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var headers: cbl.IHeaders = {'Content-Type': 'application/json'};
             var jsonParams = [];
             var viewParts = view.split('/');
             var uri = new URI(this.dbUrl).segment('_design').segment(viewParts[0]).segment('_view').segment(viewParts[1]);
             var fullURI = uri.toString();
-            var requestParams:cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
+            var requestParams: cbl.IDbDesignViewName = <cbl.IDbDesignViewName>{};
             if (params) {
                 if (params.keys) {
                     verb = 'POST';
@@ -279,12 +267,12 @@ class cblDB {
         });
     }
 
-    replicateTo(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
+    replicateTo(bodyRequest?: cbl.IPostReplicateParams, otherDB?: string) {
         return new Promise((resolve, reject)=> {
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var headers: cbl.IHeaders = {'Content-Type': 'application/json'};
             //options override the default behavior
             var defaults = {source: this.dbName, target: otherDB ? otherDB : this.syncUrl, continuous: false};
-            if(bodyRequest){
+            if (bodyRequest) {
                 _.assign(defaults, bodyRequest);
             }
             if (!defaults.source || !defaults.target) reject(new Error('no sync url available to replicate to: ' + this.dbName));
@@ -297,12 +285,12 @@ class cblDB {
         });
     }
 
-    replicateFrom(bodyRequest?:cbl.IPostReplicateParams, otherDB?:string) {
+    replicateFrom(bodyRequest?: cbl.IPostReplicateParams, otherDB?: string) {
         return new Promise((resolve, reject)=> {
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
+            var headers: cbl.IHeaders = {'Content-Type': 'application/json'};
             //options override the default behavior
             var defaults = {source: otherDB ? otherDB : this.syncUrl, target: this.dbName, continuous: false};
-            if(bodyRequest){
+            if (bodyRequest) {
                 _.assign(defaults, bodyRequest);
             }
             if (!defaults.source || !defaults.target) reject(new Error('no sync url available to replicate from: ' + this.dbName));
@@ -316,10 +304,10 @@ class cblDB {
         });
     }
 
-    remove(doc:cbl.IDoc, params?:cbl.IBatchRevParams) {
+    remove(doc: cbl.IDoc, params?: cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
             var verb = 'DELETE';
-            var requestParams:cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
+            var requestParams: cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
             if (params) requestParams = <cbl.IDbDesignViewName>_.assign(requestParams, params);
             if (!params.rev) requestParams.rev = doc._rev;
 
@@ -332,7 +320,7 @@ class cblDB {
         });
     }
 
-    removeAttachment(docId:string, attachmentId:string, rev:string) {
+    removeAttachment(docId: string, attachmentId: string, rev: string) {
         return new Promise((resolve, reject)=> {
             var verb = 'DELETE';
             var uri = new URI(this.dbUrl).segment(docId).segment(attachmentId).search({rev: rev});
@@ -351,8 +339,16 @@ class cblDB {
         });
     }
 
-    upsert(doc:cbl.IDoc, params?:cbl.IBatchRevParams) {
+    upsert(doc: cbl.IDoc, params?: cbl.IBatchRevParams) {
         return new Promise((resolve, reject)=> {
+            var headers: cbl.IHeaders = {'Content-Type': 'application/json'};
+            var uri = new URI(this.dbUrl).segment(doc._id);
+            var requestParams: cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
+            if (params) {
+                requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
+                uri.search(requestParams);
+            }
+
             var put = (upsertDoc) => {
                 if (!upsertDoc._id) reject(this.buildError('doc does not have _id for Upsert request', doc));
                 this.processRequest('PUT', uri.toString(), upsertDoc, headers,
@@ -362,23 +358,17 @@ class cblDB {
                     });
             };
 
-            var headers:cbl.IHeaders = {'Content-Type': 'application/json'};
-            var uri = new URI(this.dbUrl).segment(doc._id);
-            var requestParams:cbl.IBatchRevParams = <cbl.IBatchRevParams>{};
-            if (params) {
-                requestParams = <cbl.IBatchRevParams>_.assign(requestParams, params);
-                uri.search(requestParams);
-            }
-
             this.get(doc._id)
-                .then((dbDoc:cbl.IDoc)=> {
-                    requestParams.rev = dbDoc._rev;
-                    doc._rev = dbDoc._rev;
-                    uri.search(requestParams);
+                .then((dbDoc: cbl.IDoc)=> {
+                    if(dbDoc._rev){
+                        requestParams.rev = dbDoc._rev;
+                        doc._rev = dbDoc._rev;
+                        uri.search(requestParams);
+                    }
                     return put(doc);
                 })
                 .catch((error)=> {
-                    if (error.status === 404) put(doc);
+                    if (error.status === 404 || error.status === 409) put(doc);
                     else return error;
                 });
         });
@@ -391,18 +381,18 @@ class cblDB {
         });
     }
 
-    buildError(msg:string, err?) {
-        var error:any = new Error(msg);
+    buildError(msg: string, err?) {
+        var error: any = new Error(msg);
         if (_.isObject(err))error = _.assign(error, err);
         else if (err) error.errorValue = err;
         error.dbName = this.dbName;
         return error;
     }
 
-    processRequest(verb:string, url:string, data:any, headers:Object, cb:Function, isAttach?:boolean):void {
+    processRequest(verb: string, url: string, data: any, headers: Object, cb: Function, isAttach?: boolean): void {
         var http = new XMLHttpRequest();
         http.open(verb, url, true);
-        if (headers) _.forOwn(headers, (value:any, key)=> { http.setRequestHeader(key, value); });
+        if (headers) _.forOwn(headers, (value: any, key)=> { http.setRequestHeader(key, value); });
         if (isAttach)http.responseType = 'blob'; //options "arraybuffer", "blob", "document", "json", and "text"
 
         //state change callback
@@ -412,7 +402,7 @@ class cblDB {
                 else cb(false, JSON.parse(http.responseText), http);
             }
             else if (http.readyState == 4) cb({status: http.status, response: http.responseText});
-            else if (http.readyState !== 1 && http.readyState !== 2 && http.readyState !== 3){
+            else if (http.readyState !== 1 && http.readyState !== 2 && http.readyState !== 3) {
                 cb({status: http.status, response: http.responseText});
             }
         };
