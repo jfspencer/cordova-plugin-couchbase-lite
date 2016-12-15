@@ -102,16 +102,16 @@ public class CBLite extends CordovaPlugin {
 
     private void putAttachment(JSONArray args, CallbackContext callback) {
         try{
-            String filePath = this.cordova.getActivity().getApplicationContext().getFilesDir() + "/media" + args.getString(2);
-
+            String filePath = this.cordova.getActivity().getApplicationContext().getFilesDir() + "/media/" + args.getString(2);
             FileInputStream stream = new FileInputStream(filePath);
 
             Database db = getDB(args.getString(0), callback);
+
             Document doc = db.getDocument(args.getString(1));
             UnsavedRevision newRev = doc.getCurrentRevision().createRevision();
-            //3 is the attachment file name, 4 is mime type
             newRev.setAttachment(args.getString(3), args.getString(4), stream);
             newRev.save();
+            callback.success("attachment saved!");
         }
         catch (final Exception e) {
             e.printStackTrace();
