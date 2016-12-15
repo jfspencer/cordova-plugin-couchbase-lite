@@ -107,7 +107,8 @@
     CBLUnsavedRevision* newRev = [doc.currentRevision createRevision];
     
     NSString *docsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *filePath = [docsPath stringByAppendingPathComponent:fileName];
+    NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, @"media"];
+    NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
     
     NSData* imageData = UIImageJPEGRepresentation([UIImage imageWithContentsOfFile:filePath], 0.75);
     [newRev setAttachmentNamed: name
