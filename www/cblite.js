@@ -69,7 +69,7 @@ function putAttachment(success, failure, options) {
         },
         "CBLite",
         "putAttachment",
-        [options]);
+        options);
 }
 
 module.exports = {
