@@ -59,10 +59,24 @@ function stopReplication(dbName, success, failure) {
         [dbName]);
 }
 
+function putAttachment(success, failure, options) {
+    cordova.exec(
+        function (res) {
+            success(res);
+        },
+        function (err) {
+            failure(err);
+        },
+        "CBLite",
+        "putAttachment",
+        [options]);
+}
+
 module.exports = {
-    closeManager:closeManager,
+    closeManager: closeManager,
     getServerURL: getServerURL,
-    isReplicating:isReplicating,
+    isReplicating: isReplicating,
     stopReplication: stopReplication,
-    relaunchManager:relaunchManager
+    relaunchManager: relaunchManager,
+    putAttachment: putAttachment
 };
