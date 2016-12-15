@@ -92,6 +92,32 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
+- (void)putAttachment:(CDVInvokedUrlCommand *)urlCommand{
+    
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    NSString* docId = [urlCommand.arguments objectAtIndex:1];
+    NSString* fileName = [urlCommand.arguments objectAtIndex:2];
+    NSString* name = [urlCommand.arguments objectAtIndex:3];
+    NSString* mime = [urlCommand.arguments objectAtIndex:4];
+    
+    NSError *error;
+    CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
+    
+    CBLDocument* doc = [db documentWithID: docId];
+    CBLUnsavedRevision* newRev = [doc.currentRevision createRevision];
+    
+    NSString *docsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *filePath = [docsPath stringByAppendingPathComponent:fileName];
+    
+    NSData* imageData = UIImageJPEGRepresentation([UIImage imageWithContentsOfFile:filePath], 0.75);
+    [newRev setAttachmentNamed: name
+               withContentType: mime
+                       content: imageData];
+    assert([newRev save: &error]);
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"attachment save success"];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
 - (void)launchCouchbaseLite
 {
     if(dbmgr != nil){

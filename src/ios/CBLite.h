@@ -11,5 +11,6 @@
 - (void)relaunchManager:(CDVInvokedUrlCommand*)urlCommand;;
 - (void)closeManager:(CDVInvokedUrlCommand*)urlCommand;
 - (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand;
+- (void)putAttachment:(CDVInvokedUrlCommand*)urlCommand;
 
 @end
