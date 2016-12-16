@@ -13,6 +13,9 @@
 @synthesize liteURL;
 @synthesize dbmgr;
 
+CBLReplication *push;
+CBLReplication *pull;
+
 - (void)pluginInitialize {
     [self launchCouchbaseLite];
 }
@@ -111,11 +114,42 @@
     NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
     
     NSData* imageData = UIImageJPEGRepresentation([UIImage imageWithContentsOfFile:filePath], 0.75);
+    
     [newRev setAttachmentNamed: name
                withContentType: mime
                        content: imageData];
     assert([newRev save: &error]);
+  
+    // The replications are running now; the -replicationChanged: method will
+    // be called with notifications when their status changes.
+    
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"attachment save success"];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
+- (void) dbSync:(CDVInvokedUrlCommand *)urlCommand{
+    NSError *error;
+    
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    NSString* syncURL = [urlCommand.arguments objectAtIndex:1];
+    NSString* user = [urlCommand.arguments objectAtIndex:2];
+    NSString* pass = [urlCommand.arguments objectAtIndex:3];
+    
+    CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
+    
+    push = [db createPushReplication: [NSURL URLWithString: syncURL]];
+    pull = [db createPullReplication:[NSURL URLWithString: syncURL]];
+    
+    push.continuous = pull.continuous = NO;
+    id<CBLAuthenticator> auth;
+    auth = [CBLAuthenticator basicAuthenticatorWithName: user
+                                               password: pass];
+    
+    push.authenticator = pull.authenticator = auth;
+    
+    [push start];
+    [pull start];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"native sync started"];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 

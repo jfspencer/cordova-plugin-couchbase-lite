@@ -6,9 +6,11 @@
 @property (nonatomic, strong) NSURL *liteURL;
 @property (nonatomic, strong) CBLManager *dbmgr;
 
+
 - (void)getURL:(CDVInvokedUrlCommand*)urlCommand;
+- (void)dbSync:(CDVInvokedUrlCommand*)urlCommand;
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand;
-- (void)relaunchManager:(CDVInvokedUrlCommand*)urlCommand;;
+- (void)relaunchManager:(CDVInvokedUrlCommand*)urlCommand;
 - (void)closeManager:(CDVInvokedUrlCommand*)urlCommand;
 - (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand;
 - (void)putAttachment:(CDVInvokedUrlCommand*)urlCommand;

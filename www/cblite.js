@@ -72,11 +72,25 @@ function putAttachment(success, failure, options) {
         options);
 }
 
+function dbSync(success, failure, options) {
+    cordova.exec(
+        function (res) {
+            success(res);
+        },
+        function (err) {
+            failure(err);
+        },
+        "CBLite",
+        "dbSync",
+        options);
+}
+
 module.exports = {
     closeManager: closeManager,
     getServerURL: getServerURL,
     isReplicating: isReplicating,
     stopReplication: stopReplication,
     relaunchManager: relaunchManager,
-    putAttachment: putAttachment
+    putAttachment: putAttachment,
+    dbSync:dbSync
 };
