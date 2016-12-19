@@ -113,11 +113,11 @@ CBLReplication *pull;
     NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, @"media"];
     NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
     
-    NSData* imageData = UIImageJPEGRepresentation([UIImage imageWithContentsOfFile:filePath], 0.75);
+    NSData *data = [[NSFileManager defaultManager] contentsAtPath:filePath];
     
     [newRev setAttachmentNamed: name
                withContentType: mime
-                       content: imageData];
+                       content: data];
     assert([newRev save: &error]);
   
     // The replications are running now; the -replicationChanged: method will
