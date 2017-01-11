@@ -7,28 +7,25 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaInterface;
 import org.json.JSONArray;
-import org.json.JSONException;
 
 import com.couchbase.lite.Document;
 import com.couchbase.lite.UnsavedRevision;
 import com.couchbase.lite.android.AndroidContext;
 import com.couchbase.lite.Database;
 import com.couchbase.lite.Manager;
+import com.couchbase.lite.auth.Authenticator;
+import com.couchbase.lite.auth.AuthenticatorFactory;
 import com.couchbase.lite.listener.LiteListener;
-import com.couchbase.lite.listener.LiteServlet;
 import com.couchbase.lite.listener.Credentials;
 import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.router.URLStreamHandlerFactory;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
 import com.couchbase.lite.javascript.JavaScriptViewCompiler;
-import com.couchbase.lite.util.Log;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.File;
-import java.io.InputStream;
-import java.util.List;
+import java.net.URL;
 
 public class CBLite extends CordovaPlugin {
 
@@ -97,7 +94,37 @@ public class CBLite extends CordovaPlugin {
             putAttachment(args, callback);
             return true;
         }
+
+        if(action.equals("dbSync")) {
+            dbSync(args, callback);
+            return true;
+        }
         return false;
+    }
+
+    private void dbSync(JSONArray args, CallbackContext callback) {
+
+        try{
+            String dbName = args.getString(0);
+
+            URL syncUrl = new URL(args.getString(1));
+            String user = args.getString(2);
+            String pass = args.getString(3);
+            Database db = getDB(dbName, callback);
+
+            Replication push = db.createPushReplication(syncUrl);
+            Replication pull = db.createPullReplication(syncUrl);
+            Authenticator auth = AuthenticatorFactory.createBasicAuthenticator(user, pass);
+            push.setAuthenticator(auth);
+            pull.setAuthenticator(auth);
+            push.start();
+            pull.start();
+            callback.success("true");
+
+        }catch(Exception e){
+            e.printStackTrace();
+            callback.error(e.getMessage());
+        }
     }
 
     private void putAttachment(JSONArray args, CallbackContext callback) {
@@ -181,17 +208,17 @@ public class CBLite extends CordovaPlugin {
     private Manager startCBLite(Context context) {
         Manager manager;
         try {
-            Manager.enableLogging(Log.TAG, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_QUERY, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_VIEW, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_CHANGE_TRACKER, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_BLOB_STORE, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_DATABASE, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_LISTENER, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_MULTI_STREAM_WRITER, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_REMOTE_REQUEST, Log.VERBOSE);
-            Manager.enableLogging(Log.TAG_ROUTER, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_QUERY, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_VIEW, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_CHANGE_TRACKER, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_BLOB_STORE, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_DATABASE, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_LISTENER, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_MULTI_STREAM_WRITER, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_REMOTE_REQUEST, Log.VERBOSE);
+//            Manager.enableLogging(Log.TAG_ROUTER, Log.VERBOSE);
             manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
         } catch (IOException e) {
             throw new RuntimeException(e);
