@@ -258,6 +258,10 @@ NSMutableDictionary *activeDbs;
     
 }
 
+- (void)sync:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
 - (void)viewCleanup:(CDVInvokedUrlCommand *)urlCommand {
     
 }

@@ -27,6 +27,7 @@
 - (void)reset:(CDVInvokedUrlCommand*)urlCommand;
 - (void)revsDiff:(CDVInvokedUrlCommand*)urlCommand;
 - (void)sync:(CDVInvokedUrlCommand*)urlCommand;
+- (void)viewCleanup:(CDVInvokedUrlCommand*)urlCommand;
 - (void)allDocs:(CDVInvokedUrlCommand*)urlCommand;
 - (void)get:(CDVInvokedUrlCommand*)urlCommand;
 - (void)getAttachment:(CDVInvokedUrlCommand*)urlCommand;
