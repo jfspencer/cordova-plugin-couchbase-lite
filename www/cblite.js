@@ -85,6 +85,13 @@ module.exports.replicateTo = function replicateTo(options) {
     });
 };
 
+//destroys all instance data(db's, manangers etc) effectively returning cbl to clean state for initialization
+module.exports.reset = function reset(options) {
+    return new Promise(function (resolve, reject) {
+        exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBlite", "reset", options)
+    });
+};
+
 module.exports.revsDiff = function revsDiff(options) {
     return new Promise(function (resolve, reject) {
         exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBlite", "revsDiff", options)
@@ -248,6 +255,17 @@ module.exports.replicateTo$ = function replicateTo$(options) {
                 subscriber.complete();
             },
             function (err) {subscriber.error(err);}, "CBlite", "replicateTo", options)
+    });
+};
+
+//destroys all instance data(db's manangers etc) effectively returning cbl to clean state for initialization
+module.exports.reset$ = function reset$(options) {
+    return Rx.Observable.create(function (subscriber) {
+        exec(function (res) {
+                subscriber.next(res);
+                subscriber.complete();
+            },
+            function (err) {subscriber.error(err);}, "CBlite", "reset", options)
     });
 };
 

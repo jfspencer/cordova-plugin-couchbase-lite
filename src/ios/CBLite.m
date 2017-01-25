@@ -15,9 +15,37 @@
 
 CBLReplication *push;
 CBLReplication *pull;
+NSMutableDictionary *activeDbs;
 
 - (void)pluginInitialize {
     [self launchCouchbaseLite];
+}
+
+- (void)onReset {
+    //cancel any change listeners
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:kCBLDatabaseChangeNotification
+                                                  object:nil];
+    activeDbs = nil;
+}
+
+- (void)launchCouchbaseLite
+{
+    if(dbmgr != nil){
+        [dbmgr close];
+    }
+    NSLog(@"Launching Couchbase Lite...");
+    dbmgr = [CBLManager sharedInstance];
+    CBLRegisterJSViewCompiler();
+#if 1
+    // Couchbase Lite 1.0's CBLRegisterJSViewCompiler function doesn't register the filter compiler
+    if ([CBLDatabase filterCompiler] == nil) {
+        Class cblJSFilterCompiler = NSClassFromString(@"CBLJSFilterCompiler");
+        [CBLDatabase setFilterCompiler: [[cblJSFilterCompiler alloc] init]];
+    }
+#endif
+    self.liteURL = dbmgr.internalURL;
+    NSLog(@"Couchbase Lite url = %@", self.liteURL);
 }
 
 - (void)getURL:(CDVInvokedUrlCommand*)urlCommand
@@ -25,6 +53,8 @@ CBLReplication *pull;
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
+
+
 
 - (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand
 {
@@ -153,23 +183,128 @@ CBLReplication *pull;
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
-- (void)launchCouchbaseLite
-{
-    if(dbmgr != nil){
-        [dbmgr close];
+
+//////////_______UTIL_______\\\\\\\\\\
+
+- (void)activeTasks:(CDVInvokedUrlCommand *)urlCommand {
+    //Implementation pending
+}
+
+- (void)changes:(CDVInvokedUrlCommand *)urlCommand {
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName: kCBLDatabaseChangeNotification
+                                                      object: activeDbs[dbName]
+                                                       queue: nil
+                                                  usingBlock: ^(NSNotification *n) {
+                                                      NSArray* changes = n.userInfo[@"changes"];
+                                                      for (CBLDatabaseChange* change in changes){
+                                                          NSLog(@"Document '%@' changed.", change.documentID);
+                                                          CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:change.documentID];
+                                                          [pluginResult setKeepCallbackAsBool:YES];
+                                                          [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                                                      }
+                                                      
+                                                  }
+     ];
+}
+
+- (void)compact:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)destroy:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)info:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)initDb:(CDVInvokedUrlCommand *)urlCommand {
+    CDVPluginResult* pluginResult;
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    NSError *error;
+    activeDbs[dbName] = [dbmgr databaseNamed: dbName error: &error];
+    
+    if (!activeDbs[dbName]) {
+         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Could not init DB"];
     }
-    NSLog(@"Launching Couchbase Lite...");
-    dbmgr = [CBLManager sharedInstance];
-    CBLRegisterJSViewCompiler();
-#if 1
-    // Couchbase Lite 1.0's CBLRegisterJSViewCompiler function doesn't register the filter compiler
-    if ([CBLDatabase filterCompiler] == nil) {
-        Class cblJSFilterCompiler = NSClassFromString(@"CBLJSFilterCompiler");
-        [CBLDatabase setFilterCompiler: [[cblJSFilterCompiler alloc] init]];
+    else {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"CBL db init success"];
     }
-#endif
-    self.liteURL = dbmgr.internalURL;
-    NSLog(@"Couchbase Lite url = %@", self.liteURL);
+    
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
+- (void)replicateFrom:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)replicateTo:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)reset:(CDVInvokedUrlCommand *)urlCommand {
+    //remove event listeners
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:kCBLDatabaseChangeNotification
+                                                  object:nil];
+    //clear database dictionary
+    activeDbs = nil;
+}
+
+- (void)revsDiff:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)viewCleanup:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+//////////_______READ_______\\\\\\\\\\
+
+- (void)allDocs:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)get:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)getAttachment:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)query:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+
+//////////_______WRITE_______\\\\\\\\\\
+
+- (void)bulkDocs:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)post:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)put:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)remove:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)removeAttachment:(CDVInvokedUrlCommand *)urlCommand {
+    
+}
+
+- (void)upsert:(CDVInvokedUrlCommand *)urlCommand {
+    
 }
 
 @end
