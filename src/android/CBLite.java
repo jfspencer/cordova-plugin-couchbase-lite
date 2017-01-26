@@ -42,13 +42,10 @@ public class CBLite extends CordovaPlugin {
         System.out.println("CBLite() constructor called");
     }
 
+    @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         System.out.println("initialize() called");
         super.initialize(cordova, webView);
-        initCBLite();
-    }
-
-    private void initCBLite() {
         try {
             allowedCredentials = new Credentials();
             URLStreamHandlerFactory.registerSelfIgnoreError();
@@ -60,6 +57,12 @@ public class CBLite extends CordovaPlugin {
             e.printStackTrace();
             initFailed = true;
         }
+    }
+
+    @Override
+    public void onReset(){
+        //cancel change listeners
+        activeDbs.clear();
     }
 
     @Override
@@ -301,10 +304,12 @@ public class CBLite extends CordovaPlugin {
         return boundPort;
     }
 
+    @Override
     public void onResume(boolean multitasking) {
         System.out.println("CBLite.onResume() called");
     }
 
+    @Override
     public void onPause(boolean multitasking) {
         System.out.println("CBLite.onPause() called");
     }
