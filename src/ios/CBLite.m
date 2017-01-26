@@ -161,19 +161,19 @@ NSMutableDictionary *activeDbs;
 - (void)changes:(CDVInvokedUrlCommand *)urlCommand {
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
     
-    [[NSNotificationCenter defaultCenter] addObserverForName: kCBLDatabaseChangeNotification
-                                                      object: activeDbs[dbName]
-                                                       queue: nil
-                                                  usingBlock: ^(NSNotification *n) {
-                                                      NSArray* changes = n.userInfo[@"changes"];
-                                                      for (CBLDatabaseChange* change in changes){
-                                                          NSLog(@"Document '%@' changed.", change.documentID);
-                                                          CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:change.documentID];
-                                                          [pluginResult setKeepCallbackAsBool:YES];
-                                                          [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
-                                                      }
-                                                      
-                                                  }
+    [[NSNotificationCenter defaultCenter]
+        addObserverForName: kCBLDatabaseChangeNotification
+                    object: activeDbs[dbName]
+                     queue: nil
+                usingBlock: ^(NSNotification *n) {
+                    NSArray* changes = n.userInfo[@"changes"];
+                    for (CBLDatabaseChange* change in changes){
+                        NSLog(@"Document '%@' changed.", change.documentID);
+                        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:change.documentID];
+                        [pluginResult setKeepCallbackAsBool:YES];
+                        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                    }
+                }
      ];
 }
 
