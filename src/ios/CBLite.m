@@ -23,9 +23,10 @@ NSMutableDictionary *activeDbs;
 
 - (void)onReset {
     //cancel any change listeners
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:kCBLDatabaseChangeNotification
-                                                  object:nil];
+    [[NSNotificationCenter defaultCenter]
+     removeObserver:self
+               name:kCBLDatabaseChangeNotification
+             object:nil];
     activeDbs = nil;
 }
 
@@ -214,12 +215,7 @@ NSMutableDictionary *activeDbs;
 }
 
 - (void)reset:(CDVInvokedUrlCommand *)urlCommand {
-    //remove event listeners
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:kCBLDatabaseChangeNotification
-                                                  object:nil];
-    //clear database dictionary
-    activeDbs = nil;
+    [self onReset];
 }
 
 - (void)revsDiff:(CDVInvokedUrlCommand *)urlCommand {

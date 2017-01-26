@@ -125,6 +125,7 @@ public class CBLite extends CordovaPlugin {
     }
 
     private void reset(JSONArray args, CallbackContext callback) {
+        this.onReset();
     }
 
     private void revsDiff(JSONArray args, CallbackContext callback) {
