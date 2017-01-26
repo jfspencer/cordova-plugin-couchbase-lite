@@ -7,6 +7,7 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaInterface;
 import org.json.JSONArray;
+
 import com.couchbase.lite.Document;
 import com.couchbase.lite.UnsavedRevision;
 import com.couchbase.lite.android.AndroidContext;
@@ -34,7 +35,7 @@ public class CBLite extends CordovaPlugin {
     private int listenPort;
     private Credentials allowedCredentials;
     private Manager dbmgr = null;
-    private HashMap<String, com.couchbase.lite.Database>activeDbs = null;
+    private HashMap<String, com.couchbase.lite.Database> activeDbs = null;
 
     public CBLite() {
         super();
@@ -49,21 +50,12 @@ public class CBLite extends CordovaPlugin {
 
     private void initCBLite() {
         try {
-
             allowedCredentials = new Credentials();
-
             URLStreamHandlerFactory.registerSelfIgnoreError();
-
             View.setCompiler(new JavaScriptViewCompiler());
             Database.setFilterCompiler(new JavaScriptReplicationFilterCompiler());
-
             dbmgr = startCBLite(this.cordova.getActivity());
-
             listenPort = startCBLListener(DEFAULT_LISTEN_PORT, dbmgr, allowedCredentials);
-
-            System.out.println("initCBLite() completed successfully");
-
-
         } catch (final Exception e) {
             e.printStackTrace();
             initFailed = true;
@@ -77,7 +69,7 @@ public class CBLite extends CordovaPlugin {
         if (action.equals("isReplicating")) isReplicating(args, callback);
         if (action.equals("getURL")) getURUL(args, callback);
         if (action.equals("putAttachment")) putAttachment(args, callback);
-        if(action.equals("dbSync")) dbSync(args, callback);
+        if (action.equals("dbSync")) dbSync(args, callback);
 
         //Complete API
         if (action.equals("activeTasks")) activeTasks(args, callback);
@@ -105,18 +97,38 @@ public class CBLite extends CordovaPlugin {
         return true;
     }
 
-    private void activeTasks(JSONArray args, CallbackContext callback) {}
-    private void changes(JSONArray args, CallbackContext callback) {}
-    private void compact(JSONArray args, CallbackContext callback) {}
-    private void destroy(JSONArray args, CallbackContext callback) {}
-    private void info(JSONArray args, CallbackContext callback) {}
-    private void initDb(JSONArray args, CallbackContext callback) {}
-    private void replicateFrom(JSONArray args, CallbackContext callback) {}
-    private void replicateTo(JSONArray args, CallbackContext callback) {}
-    private void reset(JSONArray args, CallbackContext callback) {}
-    private void revsDiff(JSONArray args, CallbackContext callback) {}
+    private void activeTasks(JSONArray args, CallbackContext callback) {
+    }
+
+    private void changes(JSONArray args, CallbackContext callback) {
+    }
+
+    private void compact(JSONArray args, CallbackContext callback) {
+    }
+
+    private void destroy(JSONArray args, CallbackContext callback) {
+    }
+
+    private void info(JSONArray args, CallbackContext callback) {
+    }
+
+    private void initDb(JSONArray args, CallbackContext callback) {
+    }
+
+    private void replicateFrom(JSONArray args, CallbackContext callback) {
+    }
+
+    private void replicateTo(JSONArray args, CallbackContext callback) {
+    }
+
+    private void reset(JSONArray args, CallbackContext callback) {
+    }
+
+    private void revsDiff(JSONArray args, CallbackContext callback) {
+    }
+
     private void sync(JSONArray args, CallbackContext callback) {
-        try{
+        try {
             String dbName = args.getString(0);
             URL syncUrl = new URL(args.getString(1));
             String user = args.getString(2);
@@ -130,47 +142,64 @@ public class CBLite extends CordovaPlugin {
             push.start();
             pull.start();
             callback.success("true");
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             callback.error(e.getMessage());
         }
     }
-    private void viewCleanup(JSONArray args, CallbackContext callback) {}
-    private void allDocs(JSONArray args, CallbackContext callback) {}
-    private void get(JSONArray args, CallbackContext callback) {}
-    private void getAttachment(JSONArray args, CallbackContext callback) {}
-    private void query(JSONArray args, CallbackContext callback) {}
-    private void bulkDocs(JSONArray args, CallbackContext callback) {}
-    private void post(JSONArray args, CallbackContext callback) {}
-    private void put(JSONArray args, CallbackContext callback) {}
+
+    private void viewCleanup(JSONArray args, CallbackContext callback) {
+    }
+
+    private void allDocs(JSONArray args, CallbackContext callback) {
+    }
+
+    private void get(JSONArray args, CallbackContext callback) {
+    }
+
+    private void getAttachment(JSONArray args, CallbackContext callback) {
+    }
+
+    private void query(JSONArray args, CallbackContext callback) {
+    }
+
+    private void bulkDocs(JSONArray args, CallbackContext callback) {
+    }
+
+    private void post(JSONArray args, CallbackContext callback) {
+    }
+
+    private void put(JSONArray args, CallbackContext callback) {
+    }
 
     private void putAttachment(JSONArray args, CallbackContext callback) {
-        try{
+        try {
             String filePath = this.cordova.getActivity().getApplicationContext().getFilesDir() + "/media/" + args.getString(2);
             FileInputStream stream = new FileInputStream(filePath);
-
             Database db = getDB(args.getString(0), callback);
-
             Document doc = db.getDocument(args.getString(1));
             UnsavedRevision newRev = doc.getCurrentRevision().createRevision();
             newRev.setAttachment(args.getString(3), args.getString(4), stream);
             newRev.save();
             callback.success("attachment saved!");
-        }
-        catch (final Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
             callback.error(e.getMessage());
         }
     }
 
-    private void remove(JSONArray args, CallbackContext callback) {}
-    private void removeAttachment(JSONArray args, CallbackContext callback) {}
-    private void upsert(JSONArray args, CallbackContext callback) {}
+    private void remove(JSONArray args, CallbackContext callback) {
+    }
+
+    private void removeAttachment(JSONArray args, CallbackContext callback) {
+    }
+
+    private void upsert(JSONArray args, CallbackContext callback) {
+    }
 
     private void dbSync(JSONArray args, CallbackContext callback) {
-        try{
+        try {
             String dbName = args.getString(0);
-
             URL syncUrl = new URL(args.getString(1));
             String user = args.getString(2);
             String pass = args.getString(3);
@@ -185,27 +214,21 @@ public class CBLite extends CordovaPlugin {
             pull.start();
             callback.success("true");
 
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             callback.error(e.getMessage());
         }
     }
 
-    private boolean getURUL(JSONArray args, CallbackContext callback) {
+    private void getURUL(JSONArray args, CallbackContext callback) {
         try {
-            if (initFailed) {
+            if (initFailed)
                 callback.error("Failed to initialize couchbase lite.  See console logs");
-                return false;
-            } else {
-
-                String callbackRespone = String.format("http://%s:%s@localhost:%d/", allowedCredentials.getLogin(), allowedCredentials.getPassword(), listenPort);
-                callback.success(callbackRespone);
-                return true;
-            }
+            else
+                callback.success(String.format("http://%s:%s@localhost:%d/", allowedCredentials.getLogin(), allowedCredentials.getPassword(), listenPort));
         } catch (final Exception e) {
             e.printStackTrace();
             callback.error(e.getMessage());
-            return false;
         }
     }
 
@@ -215,13 +238,8 @@ public class CBLite extends CordovaPlugin {
             if (db != null) {
                 if (db.getActiveReplications().size() > 0) callback.success("true");
                 else callback.success("false");
-            }
-            else {
-                System.out.println("could not stop replication, database does not exist");
-                callback.error("false");
-            }
+            } else callback.error("could not check replication, database does not exist");
         } catch (final Exception e) {
-            System.out.println("could not stop replication");
             e.printStackTrace();
             callback.error(e.getMessage());
         }
@@ -231,16 +249,10 @@ public class CBLite extends CordovaPlugin {
         try {
             Database db = getDB(args.getString(0), callback);
             if (db != null) {
-                for (Replication replication : db.getAllReplications()) {
-                    replication.stop();
-                }
+                for (Replication replication : db.getAllReplications()) replication.stop();
                 callback.success("true");
-            } else {
-                System.out.println("could not stop replication, database does not exist");
-                callback.error("false");
-            }
+            } else callback.error("false");
         } catch (final Exception e) {
-            System.out.println("could not stop replication");
             e.printStackTrace();
             callback.error(e.getMessage());
         }
@@ -272,11 +284,9 @@ public class CBLite extends CordovaPlugin {
     private Database getDB(String dbName, CallbackContext callback) {
         try {
             Database db = dbmgr.getExistingDatabase(dbName);
-
             if (db == null) return null;
             else return db;
         } catch (final Exception e) {
-            System.out.println("could not stop replication");
             e.printStackTrace();
             callback.error(e.getMessage());
         }
@@ -284,7 +294,6 @@ public class CBLite extends CordovaPlugin {
     }
 
     private int startCBLListener(int listenPort, Manager manager, Credentials allowedCredentials) {
-
         LiteListener listener = new LiteListener(manager, listenPort, allowedCredentials);
         int boundPort = listener.getListenPort();
         Thread thread = new Thread(listener);
