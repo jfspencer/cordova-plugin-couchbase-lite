@@ -125,38 +125,6 @@ NSMutableDictionary *activeDbs;
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
-- (void)putAttachment:(CDVInvokedUrlCommand *)urlCommand{
-    
-    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-    NSString* docId = [urlCommand.arguments objectAtIndex:1];
-    NSString* fileName = [urlCommand.arguments objectAtIndex:2];
-    NSString* name = [urlCommand.arguments objectAtIndex:3];
-    NSString* mime = [urlCommand.arguments objectAtIndex:4];
-    
-    NSError *error;
-    CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
-    
-    CBLDocument* doc = [db documentWithID: docId];
-    CBLUnsavedRevision* newRev = [doc.currentRevision createRevision];
-    
-    NSString *docsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, @"media"];
-    NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
-    
-    NSData *data = [[NSFileManager defaultManager] contentsAtPath:filePath];
-    
-    [newRev setAttachmentNamed: name
-               withContentType: mime
-                       content: data];
-    assert([newRev save: &error]);
-  
-    // The replications are running now; the -replicationChanged: method will
-    // be called with notifications when their status changes.
-    
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"attachment save success"];
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
-}
-
 - (void) dbSync:(CDVInvokedUrlCommand *)urlCommand{
     NSError *error;
     
@@ -259,7 +227,23 @@ NSMutableDictionary *activeDbs;
 }
 
 - (void)sync:(CDVInvokedUrlCommand *)urlCommand {
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    NSString* syncURL = [urlCommand.arguments objectAtIndex:1];
+    NSString* user = [urlCommand.arguments objectAtIndex:2];
+    NSString* pass = [urlCommand.arguments objectAtIndex:3];
     
+    push = [activeDbs[dbName] createPushReplication: [NSURL URLWithString: syncURL]];
+    pull = [activeDbs[dbName] createPullReplication:[NSURL URLWithString: syncURL]];
+    
+    push.continuous = pull.continuous = NO;
+    id<CBLAuthenticator> auth;
+    auth = [CBLAuthenticator basicAuthenticatorWithName: user
+                                               password: pass];
+    push.authenticator = pull.authenticator = auth;
+    
+    [push start]; [pull start];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"native sync started"];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
 - (void)viewCleanup:(CDVInvokedUrlCommand *)urlCommand {
@@ -297,6 +281,38 @@ NSMutableDictionary *activeDbs;
 
 - (void)put:(CDVInvokedUrlCommand *)urlCommand {
     
+}
+
+- (void)putAttachment:(CDVInvokedUrlCommand *)urlCommand{
+    //TODO update to new API
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    NSString* docId = [urlCommand.arguments objectAtIndex:1];
+    NSString* fileName = [urlCommand.arguments objectAtIndex:2];
+    NSString* name = [urlCommand.arguments objectAtIndex:3];
+    NSString* mime = [urlCommand.arguments objectAtIndex:4];
+    
+    NSError *error;
+    CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
+    
+    CBLDocument* doc = [db documentWithID: docId];
+    CBLUnsavedRevision* newRev = [doc.currentRevision createRevision];
+    
+    NSString *docsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, @"media"];
+    NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
+    
+    NSData *data = [[NSFileManager defaultManager] contentsAtPath:filePath];
+    
+    [newRev setAttachmentNamed: name
+               withContentType: mime
+                       content: data];
+    assert([newRev save: &error]);
+    
+    // The replications are running now; the -replicationChanged: method will
+    // be called with notifications when their status changes.
+    
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"attachment save success"];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
 - (void)remove:(CDVInvokedUrlCommand *)urlCommand {
