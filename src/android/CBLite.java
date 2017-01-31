@@ -34,8 +34,8 @@ public class CBLite extends CordovaPlugin {
     private boolean initFailed = false;
     private int listenPort;
     private Credentials allowedCredentials;
-    private Manager dbmgr = null;
-    private HashMap<String, com.couchbase.lite.Database> activeDbs = null;
+    private static Manager dbmgr = null;
+    private static HashMap<String, com.couchbase.lite.Database> activeDbs = null;
 
     public CBLite() {
         super();
@@ -116,6 +116,14 @@ public class CBLite extends CordovaPlugin {
     }
 
     private void initDb(JSONArray args, CallbackContext callback) {
+        try {
+            String dbName = args.getString(0);
+            activeDbs.put(dbName, dbmgr.getDatabase(dbName));
+            callback.success("success");
+        } catch (final Exception e) {
+            e.printStackTrace();
+            callback.error(e.getMessage());
+        }
     }
 
     private void replicateFrom(JSONArray args, CallbackContext callback) {

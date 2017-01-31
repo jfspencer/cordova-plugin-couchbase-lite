@@ -15,7 +15,7 @@
 
 CBLReplication *push;
 CBLReplication *pull;
-NSMutableDictionary *activeDbs;
+static NSMutableDictionary *activeDbs;
 
 - (void)pluginInitialize {
     [self launchCouchbaseLite];
@@ -30,11 +30,9 @@ NSMutableDictionary *activeDbs;
     activeDbs = nil;
 }
 
-- (void)launchCouchbaseLite
-{
-    if(dbmgr != nil){
-        [dbmgr close];
-    }
+- (void)launchCouchbaseLite {
+    if(dbmgr != nil) [dbmgr close];
+
     NSLog(@"Launching Couchbase Lite...");
     dbmgr = [CBLManager sharedInstance];
     CBLRegisterJSViewCompiler();
@@ -49,16 +47,14 @@ NSMutableDictionary *activeDbs;
     NSLog(@"Couchbase Lite url = %@", self.liteURL);
 }
 
-- (void)getURL:(CDVInvokedUrlCommand*)urlCommand
-{
+- (void)getURL:(CDVInvokedUrlCommand*)urlCommand {
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
 
 
-- (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand
-{
+- (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand {
     CDVPluginResult* pluginResult = nil;
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
     
@@ -66,11 +62,8 @@ NSMutableDictionary *activeDbs;
     CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
 
     if (db != nil) {
-        if([db.allReplications count] > 0){
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
-        }else{
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"false"];
-        }
+        if([db.allReplications count] > 0)pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"true"];
+        else pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"false"];
     }
     else{
         NSLog(@"could not determine replication state");
@@ -79,8 +72,7 @@ NSMutableDictionary *activeDbs;
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
-- (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand
-{
+- (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand {
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
     [self getDB:dbName];
     
@@ -90,38 +82,28 @@ NSMutableDictionary *activeDbs;
             [r stop];
         }
     }
-    else{
-        NSLog(@"could not stop replication");
-    }
+    else NSLog(@"could not stop replication");
 
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
-- (CBLDatabase*)getDB:(NSString *)dbName
-{
+- (CBLDatabase*)getDB:(NSString *)dbName {
     NSError *error;
     CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
     
-    if(db == nil){
-        return nil;
-    }
+    if(db == nil) return nil;
     else return db;
 }
 
-- (void)closeManager:(CDVInvokedUrlCommand*)urlCommand
-{
-    if(dbmgr != nil){
-        [dbmgr close];
-    }
+- (void)closeManager:(CDVInvokedUrlCommand*)urlCommand {
+    if(dbmgr != nil) [dbmgr close];
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
--(void)relaunchManager:(CDVInvokedUrlCommand *)urlCommand{
-
+-(void)relaunchManager:(CDVInvokedUrlCommand *)urlCommand {
     [self launchCouchbaseLite];
-
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[self.liteURL absoluteString]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
@@ -196,12 +178,8 @@ NSMutableDictionary *activeDbs;
     NSError *error;
     activeDbs[dbName] = [dbmgr databaseNamed: dbName error: &error];
     
-    if (!activeDbs[dbName]) {
-         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Could not init DB"];
-    }
-    else {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"CBL db init success"];
-    }
+    if (!activeDbs[dbName]) pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Could not init DB"];
+    else pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"CBL db init success"];
     
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
