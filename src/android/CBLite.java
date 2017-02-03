@@ -62,7 +62,7 @@ public class CBLite extends CordovaPlugin {
     @Override
     public void onReset(){
         //cancel change listeners
-        activeDbs.clear();
+        if(activeDbs != null) activeDbs.clear();
     }
 
     @Override
