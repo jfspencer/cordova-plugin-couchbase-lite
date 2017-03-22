@@ -264,6 +264,7 @@ static NSMutableDictionary *activeDbs;
     NSString* fileName = [urlCommand.arguments objectAtIndex:2];
     NSString* name = [urlCommand.arguments objectAtIndex:3];
     NSString* mime = [urlCommand.arguments objectAtIndex:4];
+    NSString* dirName = [urlCommand.arguments objectAtIndex:5];
     
     NSError *error;
     CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
@@ -272,7 +273,7 @@ static NSMutableDictionary *activeDbs;
     CBLUnsavedRevision* newRev = [doc.currentRevision createRevision];
     
     NSString *docsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, @"openin"];
+    NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, dirName];
     NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
     
     NSData *data = [[NSFileManager defaultManager] contentsAtPath:filePath];
