@@ -272,7 +272,7 @@ static NSMutableDictionary *activeDbs;
     CBLUnsavedRevision* newRev = [doc.currentRevision createRevision];
     
     NSString *docsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, @"media"];
+    NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, @"openin"];
     NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
     
     NSData *data = [[NSFileManager defaultManager] contentsAtPath:filePath];

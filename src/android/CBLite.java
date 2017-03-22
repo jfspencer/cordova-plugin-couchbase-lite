@@ -186,7 +186,7 @@ public class CBLite extends CordovaPlugin {
 
     private void putAttachment(JSONArray args, CallbackContext callback) {
         try {
-            String filePath = this.cordova.getActivity().getApplicationContext().getFilesDir() + "/media/" + args.getString(2);
+            String filePath = this.cordova.getActivity().getApplicationContext().getFilesDir() + "/openin/" + args.getString(2);
             FileInputStream stream = new FileInputStream(filePath);
             Database db = getDB(args.getString(0), callback);
             Document doc = db.getDocument(args.getString(1));
