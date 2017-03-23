@@ -161,7 +161,17 @@ static NSMutableDictionary *activeDbs;
 }
 
 - (void)compact:(CDVInvokedUrlCommand *)urlCommand {
-    
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+
+    NSError *error;
+    CBLDatabase *db = [dbmgr existingDatabaseNamed: dbName error: &error];
+
+
+    NSError * _Nullable __autoreleasing * error2 = NULL;
+    [db compact:error2];
+
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"attachment save success"];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
 - (void)destroy:(CDVInvokedUrlCommand *)urlCommand {

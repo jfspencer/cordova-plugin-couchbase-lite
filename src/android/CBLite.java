@@ -107,6 +107,14 @@ public class CBLite extends CordovaPlugin {
     }
 
     private void compact(JSONArray args, CallbackContext callback) {
+        try {
+            Database db = getDB(args.getString(0), callback);
+            db.compact();
+            callback.success("attachment saved!");
+        } catch (final Exception e) {
+            e.printStackTrace();
+            callback.error(e.getMessage());
+        }
     }
 
     private void destroy(JSONArray args, CallbackContext callback) {
