@@ -69,34 +69,34 @@ public class CBLite extends CordovaPlugin {
     public boolean execute(String action, JSONArray args, CallbackContext callback) {
         //Old API
         if (action.equals("stopReplication")) stopReplication(args, callback);
-        if (action.equals("isReplicating")) isReplicating(args, callback);
-        if (action.equals("getURL")) getURUL(args, callback);
-        if (action.equals("putAttachment")) putAttachment(args, callback);
-        if (action.equals("dbSync")) dbSync(args, callback);
+        else if (action.equals("isReplicating")) isReplicating(args, callback);
+        else if (action.equals("getURL")) getURUL(args, callback);
+        else if (action.equals("putAttachment")) putAttachment(args, callback);
+        else if (action.equals("dbSync")) dbSync(args, callback);
 
         //Complete API
-        if (action.equals("activeTasks")) activeTasks(args, callback);
-        if (action.equals("changes")) changes(args, callback);
-        if (action.equals("compact")) compact(args, callback);
-        if (action.equals("destroy")) destroy(args, callback);
-        if (action.equals("info")) info(args, callback);
-        if (action.equals("initDb")) initDb(args, callback);
-        if (action.equals("replicateFrom")) replicateFrom(args, callback);
-        if (action.equals("replicateTo")) replicateTo(args, callback);
-        if (action.equals("reset")) reset(args, callback);
-        if (action.equals("revsDiff")) revsDiff(args, callback);
-        if (action.equals("sync")) sync(args, callback);
-        if (action.equals("viewCleanup")) viewCleanup(args, callback);
-        if (action.equals("allDocs")) allDocs(args, callback);
-        if (action.equals("get")) get(args, callback);
-        if (action.equals("getAttachment")) getAttachment(args, callback);
-        if (action.equals("query")) query(args, callback);
-        if (action.equals("bulkDocs")) bulkDocs(args, callback);
-        if (action.equals("post")) post(args, callback);
-        if (action.equals("put")) put(args, callback);
-        if (action.equals("remove")) remove(args, callback);
-        if (action.equals("removeAttachment")) removeAttachment(args, callback);
-        if (action.equals("upsert")) upsert(args, callback);
+        else if (action.equals("activeTasks")) activeTasks(args, callback);
+        else if (action.equals("changes")) changes(args, callback);
+        else if (action.equals("compact")) compact(args, callback);
+        else if (action.equals("destroy")) destroy(args, callback);
+        else if (action.equals("info")) info(args, callback);
+        else if (action.equals("initDb")) initDb(args, callback);
+        else if (action.equals("replicateFrom")) replicateFrom(args, callback);
+        else if (action.equals("replicateTo")) replicateTo(args, callback);
+        else if (action.equals("reset")) reset(args, callback);
+        else if (action.equals("revsDiff")) revsDiff(args, callback);
+        else if (action.equals("sync")) sync(args, callback);
+        else if (action.equals("viewCleanup")) viewCleanup(args, callback);
+        else if (action.equals("allDocs")) allDocs(args, callback);
+        else if (action.equals("get")) get(args, callback);
+        else if (action.equals("getAttachment")) getAttachment(args, callback);
+        else if (action.equals("query")) query(args, callback);
+        else if (action.equals("bulkDocs")) bulkDocs(args, callback);
+        else if (action.equals("post")) post(args, callback);
+        else if (action.equals("put")) put(args, callback);
+        else if (action.equals("remove")) remove(args, callback);
+        else if (action.equals("removeAttachment")) removeAttachment(args, callback);
+        else if (action.equals("upsert")) upsert(args, callback);
         return true;
     }
 
