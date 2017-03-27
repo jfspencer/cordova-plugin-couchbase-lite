@@ -50,9 +50,11 @@ module.exports.changes = function changes(options) {
 };
 
 module.exports.compact = function compact(options) {
-    return new Promise(function (resolve, reject) {
-        exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBlite", "compact", options);
-    });
+exec(function (r) {console.log('res:' + JSON.stringify(r))}, function (er) {console.log('res:' + JSON.stringify(er))}, "CBlite", "compact", options);
+return Promise.resolve(true);
+    // return new Promise(function (resolve, reject) {
+//         exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBlite", "compact", options);
+//     });
 };
 
 module.exports.destroy = function destroy(options) {
