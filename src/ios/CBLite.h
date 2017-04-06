@@ -6,15 +6,6 @@
 @property (nonatomic, strong) NSURL *liteURL;
 @property (nonatomic, strong) CBLManager *dbmgr;
 
-//Old API
-- (void)getURL:(CDVInvokedUrlCommand*)urlCommand;
-- (void)dbSync:(CDVInvokedUrlCommand*)urlCommand;
-- (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand;
-- (void)relaunchManager:(CDVInvokedUrlCommand*)urlCommand;
-- (void)closeManager:(CDVInvokedUrlCommand*)urlCommand;
-- (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand;
-- (void)putAttachment:(CDVInvokedUrlCommand*)urlCommand;
-
 //complete API
 - (void)activeTasks:(CDVInvokedUrlCommand*)urlCommand;
 - (void)changes:(CDVInvokedUrlCommand*)urlCommand;
@@ -38,5 +29,12 @@
 - (void)remove:(CDVInvokedUrlCommand*)urlCommand;
 - (void)removeAttachment:(CDVInvokedUrlCommand*)urlCommand;
 - (void)upsert:(CDVInvokedUrlCommand*)urlCommand;
+
+//UTIL
+- (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand;
+- (void)relaunchManager:(CDVInvokedUrlCommand*)urlCommand;
+- (void)closeManager:(CDVInvokedUrlCommand*)urlCommand;
+- (void)isReplicating:(CDVInvokedUrlCommand*)urlCommand;
+- (void)putAttachment:(CDVInvokedUrlCommand*)urlCommand;
 
 @end
