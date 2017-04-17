@@ -28,8 +28,8 @@ module.exports.putAttachment = function putAttachment(success, failure, options)
     exec(function (res) {success(res);}, function (err) {failure(err);}, "CBLite", "putAttachment", options);
 };
 
-module.exports.dbSync = function dbSync(success, failure, options) {
-    exec(function (res) {success(res);}, function (err) {failure(err);}, "CBLite", "dbSync", options);
+module.exports.sync = function dbSync(success, failure, options) {
+    exec(function (res) {success(res);}, function (err) {failure(err);}, "CBLite", "sync", options);
 };
 
 /**
