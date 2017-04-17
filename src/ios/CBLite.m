@@ -21,6 +21,9 @@ static NSMutableDictionary *activeDbs;
     CDVPluginResult* pluginResult;
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
     NSError *error;
+    if(activeDbs == nil){
+        activeDbs = [NSMutableDictionary dictionary];
+    }
     activeDbs[dbName] = [dbmgr databaseNamed: dbName error: &error];
 
     if (!activeDbs[dbName]) pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Could not init DB"];
@@ -35,7 +38,7 @@ static NSMutableDictionary *activeDbs;
 
 - (void)changes:(CDVInvokedUrlCommand *)urlCommand {
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-    
+
     [[NSNotificationCenter defaultCenter]
         addObserverForName: kCBLDatabaseChangeNotification
                     object: activeDbs[dbName]
@@ -65,11 +68,15 @@ static NSMutableDictionary *activeDbs;
 }
 
 - (void)destroy:(CDVInvokedUrlCommand *)urlCommand {
-    
+
 }
 
 - (void)info:(CDVInvokedUrlCommand *)urlCommand {
-    
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    CBLDatabase *db = activeDbs[dbName];
+
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSUInteger:db.documentCount];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
 - (void)replicateFrom:(CDVInvokedUrlCommand *)urlCommand {
