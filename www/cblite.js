@@ -62,7 +62,7 @@ module.exports.stopReplication = function stopReplication(options) {
 
 //Continuous Two way replication
 module.exports.sync = function dbSync(options) {
-    return new Promise(function(resolve, reject){
+    return new Promise(function (resolve, reject) {
         exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBLite", "sync", options);
     })
 };
@@ -71,7 +71,7 @@ module.exports.sync = function dbSync(options) {
 module.exports.allDocs$ = function allDocs$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
-                res.forEach(function (item) {subscriber.next(item);});
+                _.each(res, function (item) {subscriber.next(eval("(" + item + ")"));});
                 subscriber.complete();
             },
             function (err) {subscriber.error(err);}, "CBLite", "allDocs", options);
@@ -80,7 +80,7 @@ module.exports.allDocs$ = function allDocs$(options) {
 
 module.exports.get = function get(options) {
     return new Promise(function (resolve, reject) {
-        exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBLite", "get", options);
+        exec(function (res) {resolve(eval("(" + res + ")");}, function (err) {reject(err);}, "CBLite", "get", options);
     });
 };
 
