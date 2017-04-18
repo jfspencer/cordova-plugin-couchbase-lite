@@ -57,7 +57,7 @@ static NSMutableDictionary *replications;
     if(dbs == nil){dbs = [NSMutableDictionary dictionary];}
     dbs[dbName] = [dbmgr databaseNamed: dbName error: &error];
     if (!dbs[dbName]) pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Could not init DB"];
-    else pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"CBL db init success"];
+    else pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"CBL db init success"];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
