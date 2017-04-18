@@ -227,7 +227,7 @@ public class CBLite extends CordovaPlugin {
                 result.setKeepCallback(true);
                 callback.sendPluginResult(result);
             }
-            PluginResult result = new PluginResult(PluginResult.Status.OK, "{}");
+            PluginResult result = new PluginResult(PluginResult.Status.OK, "");
             result.setKeepCallback(false);
             callback.sendPluginResult(result);
         }
