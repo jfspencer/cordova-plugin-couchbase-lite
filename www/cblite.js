@@ -12,7 +12,6 @@ module.exports.changes$ = function changes$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
                 subscriber.next(res);
-                subscriber.complete();
             },
             function (err) {subscriber.error(err);}, "CBLite", "changes", options);
     });
@@ -124,7 +123,7 @@ module.exports.allDocs$ = function allDocs$(options) {
  */
 module.exports.get = function get(options) {
     return new Promise(function (resolve, reject) {
-        exec(function (res) {resolve(eval("(" + res + ")");}, function (err) {reject(err);}, "CBLite", "get", options);
+        exec(function (res) {resolve(eval("(" + res + ")"));}, function (err) {reject(err);}, "CBLite", "get", options);
     });
 };
 

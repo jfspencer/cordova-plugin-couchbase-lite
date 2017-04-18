@@ -12,8 +12,6 @@
 
 @synthesize dbmgr;
 
-CBLReplication *push;
-CBLReplication *pull;
 static NSMutableDictionary *dbs;
 static NSMutableDictionary *replications;
 
@@ -33,8 +31,7 @@ static NSMutableDictionary *replications;
              [pluginResult setKeepCallbackAsBool:YES];
              [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
          }
-     }
-     ];
+     }];
 }
 
 - (void)compact:(CDVInvokedUrlCommand *)urlCommand {
@@ -101,8 +98,8 @@ static NSMutableDictionary *replications;
     if(replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_push"]] != nil){ [replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_push"]] stop]; }
     if(replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_pull"]] != nil){ [replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_pull"]] stop]; }
 
-    push = [dbs[dbName] createPushReplication: [NSURL URLWithString: syncURL]];
-    pull = [dbs[dbName] createPullReplication:[NSURL URLWithString: syncURL]];
+    CBLReplication *push = [dbs[dbName] createPushReplication: [NSURL URLWithString: syncURL]];
+    CBLReplication *pull = [dbs[dbName] createPullReplication:[NSURL URLWithString: syncURL]];
 
     push.continuous = pull.continuous = YES;
 
@@ -237,8 +234,14 @@ static NSMutableDictionary *replications;
      removeObserver:self
      name:kCBLDatabaseChangeNotification
      object:nil];
-    if(push != nil) {[push stop];}
-    if(pull != nil) {[pull stop];}
+
+    //cancel all replications
+    for (CBLDatabase *db in dbs) {
+        for (CBLReplication *r in db.allReplications) {
+            [r stop];
+        }
+    }
+
     replications = nil;
     dbs = nil;
 }
