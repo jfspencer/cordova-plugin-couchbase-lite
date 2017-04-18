@@ -85,7 +85,6 @@ static NSMutableDictionary *replications;
             [r stop];
         }
     }
-    else NSLog(@"could not stop replication");
 
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"replication stopped"];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
@@ -124,12 +123,12 @@ static NSMutableDictionary *replications;
 #pragma mark READ
 - (void)allDocs:(CDVInvokedUrlCommand *)urlCommand {
     NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-    NSString* limitString = [urlCommand.arguments objectAtIndex:1];
-    NSInteger limit = [limitString integerValue];
+    //NSString* limitString = [urlCommand.arguments objectAtIndex:1];
+    //NSInteger limit = [limitString integerValue];
 
     CBLQuery* query = [dbs[dbName] createAllDocumentsQuery];
     query.allDocsMode = kCBLAllDocs;
-    query.limit = limit;
+    //query.limit = limit;
     NSError *error;
     CBLQueryEnumerator* result = [query run: &error];
     for (CBLQueryRow* row in result) {
