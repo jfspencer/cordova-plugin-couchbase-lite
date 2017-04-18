@@ -217,6 +217,7 @@ public class CBLite extends CordovaPlugin {
             String dbName = args.getString(0);
             Query query = dbs.get(dbName).createAllDocumentsQuery();
             query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
+            query.shouldPrefetch();
             QueryEnumerator allDocsQuery = query.run();
             ObjectMapper mapper = new ObjectMapper();
             for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {

@@ -125,6 +125,7 @@ static NSMutableDictionary *replications;
 
     CBLQuery* query = [dbs[dbName] createAllDocumentsQuery];
     query.allDocsMode = kCBLAllDocs;
+    query.prefetch = YES;
     //query.limit = limit;
     NSError *error;
     CBLQueryEnumerator* result = [query run: &error];

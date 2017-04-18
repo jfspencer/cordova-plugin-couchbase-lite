@@ -96,7 +96,7 @@ module.exports.stopReplication = function stopReplication(options) {
  * @param options:[dbName:string, syncUrl:string, user:string, pass:string]
  * @returns message:string
  */
-module.exports.sync = function dbSync(options) {
+module.exports.sync = function sync(options) {
     return new Promise(function (resolve, reject) {
         exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBLite", "sync", options);
     })
@@ -110,7 +110,7 @@ module.exports.sync = function dbSync(options) {
 module.exports.allDocs$ = function allDocs$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
-                _.each(res, function (item) {subscriber.next(eval("(" + item + ")"));});
+                subscriber.next(eval("(" + res + ")"));
                 subscriber.complete();
             },
             function (err) {subscriber.error(err);}, "CBLite", "allDocs", options);
