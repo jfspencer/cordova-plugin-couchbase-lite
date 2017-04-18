@@ -24,6 +24,7 @@ import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
 import com.couchbase.lite.javascript.JavaScriptViewCompiler;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.FileInputStream;
@@ -32,6 +33,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class CBLite extends CordovaPlugin {
 
@@ -268,16 +270,21 @@ public class CBLite extends CordovaPlugin {
             String id = args.getString(1);
             String jsonString = args.getString(2);
 
-            //string
-            //jackson
-            //to cbl document
+            ObjectMapper mapper = new ObjectMapper();
+
+            Document doc = dbs.get(dbName).getExistingDocument(id);
+            Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+            if(doc != null) doc.putProperties(mapDoc);
+            else{
+                Document newDoc = dbs.get(dbName).getDocument(id);
+                newDoc.putProperties(mapDoc);
+            }
+            callback.success("upsert successful");
         }
         catch(final Exception e){
             callback.error(e.getMessage());
         }
-
     }
-
 
     //PLUGIN BOILER PLATE
 
