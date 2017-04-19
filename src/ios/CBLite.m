@@ -163,7 +163,7 @@ static NSThread *cblThread;
         [pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 
-        CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+        CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@""];
         [finalPluginResult setKeepCallbackAsBool:NO];
         [self.commandDelegate sendPluginResult:finalPluginResult callbackId:urlCommand.callbackId];
     });
