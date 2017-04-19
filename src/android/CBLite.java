@@ -36,6 +36,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import javax.xml.datatype.Duration;
 
 public class CBLite extends CordovaPlugin {
 
@@ -44,6 +52,8 @@ public class CBLite extends CordovaPlugin {
     private static HashMap<String, Replication> replications = null;
     private static HashMap<String, Database.ChangeListener> changeListeners = null;
     private static HashMap<String, Replication.ChangeListener> replicationListeners = null;
+    private static int runnerCount = 0;
+    final static int MAX_THREADS = 3;
 
     public CBLite() {
         super();
@@ -94,6 +104,7 @@ public class CBLite extends CordovaPlugin {
         if (changeListeners != null) changeListeners.clear();
         if (replicationListeners != null) replicationListeners.clear();
         if (replications != null) replications.clear();
+        runnerCount = 0;
     }
 
     @Override
@@ -148,57 +159,73 @@ public class CBLite extends CordovaPlugin {
         }
     }
 
-    private void changesReplication(JSONArray args, final CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            if (replicationListeners == null) {
-                replicationListeners = new HashMap<String, Replication.ChangeListener>();
-            }
-            if (dbs.get(dbName) != null) {
-                replicationListeners.put(dbName, new Replication.ChangeListener() {
-                    public void changed(Replication.ChangeEvent event) {
-                        Replication.ReplicationStatus status = event.getStatus();
-                        PluginResult result = new PluginResult(PluginResult.Status.OK, status.toString());
-                        result.setKeepCallback(true);
-                        callback.sendPluginResult(result);
+    private void changesReplication(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    if (replicationListeners == null) {
+                        replicationListeners = new HashMap<String, Replication.ChangeListener>();
                     }
-                });
-                replications.get(dbName).addChangeListener(replicationListeners.get(dbName));
+                    if (dbs.get(dbName) != null) {
+                        replicationListeners.put(dbName, new Replication.ChangeListener() {
+                            public void changed(Replication.ChangeEvent event) {
+                                Replication.ReplicationStatus status = event.getStatus();
+                                PluginResult result = new PluginResult(PluginResult.Status.OK, status.toString());
+                                result.setKeepCallback(true);
+                                callback.sendPluginResult(result);
+                            }
+                        });
+                        replications.get(dbName).addChangeListener(replicationListeners.get(dbName));
+                    }
+
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
             }
-
-        } catch (final Exception e) {
-            callback.error(e.getMessage());
-        }
+        });
     }
 
-    private void compact(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            dbs.get(dbName).compact();
-            callback.success("attachment saved!");
-        } catch (final Exception e) {
-            callback.error(e.getMessage());
-        }
+    private void compact(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    dbs.get(dbName).compact();
+                    callback.success("attachment saved!");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void info(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            callback.success(dbs.get(dbName).getDocumentCount());
-        } catch (final Exception e) {
-            callback.error(e.getMessage());
-        }
+    private void info(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    callback.success(dbs.get(dbName).getDocumentCount());
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void initDb(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            if (dbs == null) dbs = new HashMap<String, Database>();
-            dbs.put(dbName, dbmgr.getDatabase(dbName));
-            callback.success("CBL db init success");
-        } catch (final Exception e) {
-            callback.error(e.getMessage());
-        }
+    private void initDb(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    if (dbs == null) dbs = new HashMap<String, Database>();
+                    dbs.put(dbName, dbmgr.getDatabase(dbName));
+                    callback.success("CBL db init success");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
     private void replicateFrom(JSONArray args, CallbackContext callback) {
@@ -224,74 +251,103 @@ public class CBLite extends CordovaPlugin {
         }
     }
 
-    private void sync(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            URL syncUrl = new URL(args.getString(1));
-            String user = args.getString(2);
-            String pass = args.getString(3);
+    private void sync(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    URL syncUrl = new URL(args.getString(1));
+                    String user = args.getString(2);
+                    String pass = args.getString(3);
 
-            if(replications == null) replications = new HashMap<String, Replication>();
+                    if(replications == null) replications = new HashMap<String, Replication>();
 
-            Replication push = dbs.get(dbName).createPushReplication(syncUrl);
-            Replication pull = dbs.get(dbName).createPullReplication(syncUrl);
-            Authenticator auth = AuthenticatorFactory.createBasicAuthenticator(user, pass);
-            push.setAuthenticator(auth);
-            pull.setAuthenticator(auth);
-            push.start();
-            pull.start();
+                    Replication push = dbs.get(dbName).createPushReplication(syncUrl);
+                    Replication pull = dbs.get(dbName).createPullReplication(syncUrl);
+                    Authenticator auth = AuthenticatorFactory.createBasicAuthenticator(user, pass);
+                    push.setAuthenticator(auth);
+                    pull.setAuthenticator(auth);
+                    push.start();
+                    pull.start();
 
-            replications.put(dbName + "_push",push);
-            replications.put(dbName + "_pull", pull);
+                    replications.put(dbName + "_push",push);
+                    replications.put(dbName + "_pull", pull);
 
-            callback.success("true");
-        } catch (Exception e) {
-            callback.error(e.getMessage());
-        }
+                    callback.success("true");
+                } catch (Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
 
     private void allDocs(final JSONArray args, final CallbackContext callback) {
-        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
-        result.setKeepCallback(true);
-        callback.sendPluginResult(result);
-
+        PluginResult firstResult = new PluginResult(PluginResult.Status.NO_RESULT);
+        firstResult.setKeepCallback(true);
+        callback.sendPluginResult(firstResult);
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
+                //create batch queries
                 try{
-                    String dbName = args.getString(0);
-                    Query query = dbs.get(dbName).createAllDocumentsQuery();
-                    query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
-                    query.shouldPrefetch();
-                    query.isInclusiveEnd();
-                    QueryEnumerator allDocsQuery = query.run();
-                    ObjectMapper mapper = new ObjectMapper();
-                    int batch = 1000;
-                    final ArrayList<String> responseBuffer = new ArrayList<String>();
-                    for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
-                        QueryRow row = it.next();
-                        responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
-                        if(responseBuffer.size() > batch){
-                            List<String> buffer = responseBuffer.subList(0,batch);
-                            responseBuffer.removeAll(buffer);
-                            PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",",buffer) + "]");
-                            result.setKeepCallback(true);
-                            callback.sendPluginResult(result);
+                    final String dbName = args.getString(0);
+                    final int totalDocs = dbs.get(dbName).getDocumentCount();
+                    final int batch = 500;
+                    final int segments = batch > totalDocs ? 1 : totalDocs / batch;
+                    final ObjectMapper mapper = new ObjectMapper();
+                    ArrayList<Integer> skipList = new ArrayList<Integer>();
+                    for(int i = 1; i <= segments; i++) skipList.add(i * batch);
+                    for(Integer skipCount: skipList){
+                        final int innerSkip = skipCount;
+                        ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
+
+                        Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
+                            @Override
+                            public Boolean call() throws Exception {
+                                Query query = dbs.get(dbName).createAllDocumentsQuery();
+                                query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
+                                query.setPrefetch(true);
+                                query.setLimit(batch);
+                                query.setSkip(innerSkip);
+                                try{
+                                    QueryEnumerator allDocsQuery = query.run();
+                                    final ArrayList<String> responseBuffer = new ArrayList<String>();
+
+                                    for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
+                                        QueryRow row = it.next();
+                                        responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
+                                    }
+                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",",responseBuffer) + "]");
+                                    result.setKeepCallback(true);
+                                    callback.sendPluginResult(result);
+                                    if(totalDocs - innerSkip < batch){
+                                        //close callback
+                                        PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
+                                        finalResult.setKeepCallback(false);
+                                        callback.sendPluginResult(finalResult);
+                                        runnerCount = 0;
+                                    }
+                                }
+                                catch(Exception e){
+                                    PluginResult result = new PluginResult(PluginResult.Status.ERROR,e.getMessage());
+                                    result.setKeepCallback(false);
+                                    callback.sendPluginResult(result);
+                                    return false;
+                                }
+                                return true;
+                            }
+                        });
+                        runnerCount += 1;
+                        if(runnerCount >= MAX_THREADS) {
+                            isComplete.get();
+                            runnerCount = 0;
                         }
                     }
-
-                    //send last batch
-                    PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",",responseBuffer) + "]");
-                    result.setKeepCallback(true);
-                    callback.sendPluginResult(result);
-
-                    //close callback
-                    PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
-                    finalResult.setKeepCallback(false);
-                    callback.sendPluginResult(finalResult);
                 }
                 catch(Exception e){
-                    callback.error(e.getMessage());
+                    PluginResult result = new PluginResult(PluginResult.Status.ERROR,e.getMessage());
+                    result.setKeepCallback(false);
+                    callback.sendPluginResult(result);
                 }
             }
         });

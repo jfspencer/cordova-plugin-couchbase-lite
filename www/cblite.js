@@ -123,8 +123,12 @@ module.exports.sync = function sync(options) {
 module.exports.allDocs$ = function allDocs$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
-                if(_.isEmpty(res))subscriber.complete();
-                else subscriber.next(eval("(" + res + ")"));
+                if (_.isEmpty(res)) subscriber.complete();
+                else {
+                    var data = eval("(" + res + ")");
+                    if (data.doc) subscriber.next(data.doc);
+                    else subscriber.next(data);
+                }
             },
             function (err) {subscriber.error(err);}, "CBLite", "allDocs", options);
     });
