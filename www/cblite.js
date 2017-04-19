@@ -8,12 +8,25 @@ var exec = require('cordova/exec');
  * @param options:[dbName]
  * @returns docId:Rx
  */
-module.exports.changes$ = function changes$(options) {
+module.exports.changesDatabase$ = function changes$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
                 subscriber.next(res);
             },
-            function (err) {subscriber.error(err);}, "CBLite", "changes", options);
+            function (err) {subscriber.error(err);}, "CBLite", "changesDatabase", options);
+    });
+};
+
+/**
+ * @param options:[dbName]
+ * @returns docId:Rx
+ */
+module.exports.changesReplication$ = function changes$(options) {
+    return Rx.Observable.create(function (subscriber) {
+        exec(function (res) {
+                subscriber.next(res);
+            },
+            function (err) {subscriber.error(err);}, "CBLite", "changesReplication", options);
     });
 };
 

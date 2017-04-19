@@ -6,7 +6,8 @@
 @property (nonatomic, strong) CBLManager *dbmgr;
 
 //UTIL
-- (void)changes:(CDVInvokedUrlCommand*)urlCommand;
+- (void)changesDatabase:(CDVInvokedUrlCommand*)urlCommand;
+- (void)changesReplication:(CDVInvokedUrlCommand*)urlCommand;
 - (void)compact:(CDVInvokedUrlCommand*)urlCommand;
 - (void)info:(CDVInvokedUrlCommand*)urlCommand;
 - (void)initDb:(CDVInvokedUrlCommand*)urlCommand;

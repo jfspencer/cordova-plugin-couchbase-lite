@@ -17,7 +17,10 @@ static CBLManager *dbmgr;
 static NSThread *cblThread;
 
 #pragma mark UTIL
-- (void)changes:(CDVInvokedUrlCommand *)urlCommand {
+- (void)changesDatabase:(CDVInvokedUrlCommand *)urlCommand {
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+    [pluginResult setKeepCallbackAsBool:YES];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         [[NSNotificationCenter defaultCenter]
@@ -27,13 +30,34 @@ static NSThread *cblThread;
          usingBlock: ^(NSNotification *n) {
              NSArray* changes = n.userInfo[@"changes"];
              for (CBLDatabaseChange* change in changes){
-                 NSLog(@"Document '%@' changed.", change.documentID);
                  CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:change.documentID];
                  [pluginResult setKeepCallbackAsBool:YES];
                  [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
              }
          }];
     });
+}
+
+- (void)changesReplication:(CDVInvokedUrlCommand *)urlCommand {
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+    [pluginResult setKeepCallbackAsBool:YES];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+    dispatch_cbl_async(cblThread, ^{
+        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+        [[NSNotificationCenter defaultCenter]
+         addObserverForName: kCBLDatabaseChangeNotification
+         object: dbs[dbName]
+         queue: nil
+         usingBlock: ^(NSNotification *n) {
+             NSArray* changes = n.userInfo[@"changes"];
+             for (CBLDatabaseChange* change in changes){
+                 CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:change.documentID];
+                 [pluginResult setKeepCallbackAsBool:YES];
+                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+             }
+         }];
+    });
+
 }
 
 - (void)compact:(CDVInvokedUrlCommand *)urlCommand {

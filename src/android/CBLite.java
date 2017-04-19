@@ -1,6 +1,7 @@
 package com.couchbase.cblite.phonegap;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -30,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +43,7 @@ public class CBLite extends CordovaPlugin {
     private static HashMap<String, Database> dbs = null;
     private static HashMap<String, Replication> replications = null;
     private static HashMap<String, Database.ChangeListener> changeListeners = null;
+    private static HashMap<String, Replication.ChangeListener> replicationListeners = null;
 
     public CBLite() {
         super();
@@ -69,6 +72,12 @@ public class CBLite extends CordovaPlugin {
             }
         }
 
+        for (String dbName : replicationListeners.keySet()) {
+            for (Replication.ChangeListener listener : replicationListeners.values()) {
+                replications.get(dbName).removeChangeListener(listener);
+            }
+        }
+
         //cancel replications
         for (Replication replication : replications.values()) {
             replication.stop();
@@ -76,6 +85,7 @@ public class CBLite extends CordovaPlugin {
 
         if (!dbs.isEmpty()) dbs.clear();
         if (!changeListeners.isEmpty()) changeListeners.clear();
+        if (!replicationListeners.isEmpty()) replicationListeners.clear();
         if (!replications.isEmpty()) replications.clear();
     }
 
@@ -83,7 +93,8 @@ public class CBLite extends CordovaPlugin {
     public boolean execute(String action, JSONArray args, CallbackContext callback) {
 
         //UTIL
-        if (action.equals("changes")) changes(args, callback);
+        if (action.equals("changesDatabase")) changesDatabase(args, callback);
+        else if (action.equals("changesReplication")) changesReplication(args, callback);
         else if (action.equals("compact")) compact(args, callback);
         else if (action.equals("info")) info(args, callback);
         else if (action.equals("initDb")) initDb(args, callback);
@@ -104,9 +115,7 @@ public class CBLite extends CordovaPlugin {
         return true;
     }
 
-    private void changes(JSONArray args, CallbackContext callback) {
-        final CallbackContext innerCallback = callback;
-
+    private void changesDatabase(JSONArray args, final CallbackContext callback) {
         try {
             String dbName = args.getString(0);
             if (changeListeners == null) {
@@ -119,12 +128,35 @@ public class CBLite extends CordovaPlugin {
                         for (DocumentChange change : changes) {
                             PluginResult result = new PluginResult(PluginResult.Status.OK, change.getDocumentId());
                             result.setKeepCallback(true);
-                            innerCallback.sendPluginResult(result);
+                            callback.sendPluginResult(result);
                         }
                     }
                 });
 
                 dbs.get(dbName).addChangeListener(changeListeners.get(dbName));
+            }
+
+        } catch (final Exception e) {
+            callback.error(e.getMessage());
+        }
+    }
+
+    private void changesReplication(JSONArray args, final CallbackContext callback) {
+        try {
+            String dbName = args.getString(0);
+            if (replicationListeners == null) {
+                replicationListeners = new HashMap<String, Replication.ChangeListener>();
+            }
+            if (dbs.get(dbName) != null) {
+                replicationListeners.put(dbName, new Replication.ChangeListener() {
+                    public void changed(Replication.ChangeEvent event) {
+                        Replication.ReplicationStatus status = event.getStatus();
+                        PluginResult result = new PluginResult(PluginResult.Status.OK, status.toString());
+                        result.setKeepCallback(true);
+                        callback.sendPluginResult(result);
+                    }
+                });
+                replications.get(dbName).addChangeListener(replicationListeners.get(dbName));
             }
 
         } catch (final Exception e) {
@@ -212,28 +244,50 @@ public class CBLite extends CordovaPlugin {
     }
 
 
-    private void allDocs(JSONArray args, CallbackContext callback) {
-        try{
-            String dbName = args.getString(0);
-            Query query = dbs.get(dbName).createAllDocumentsQuery();
-            query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
-            query.shouldPrefetch();
-            QueryEnumerator allDocsQuery = query.run();
-            ObjectMapper mapper = new ObjectMapper();
-            for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
-                QueryRow row = it.next();
-                String jsonString = mapper.writeValueAsString(row.asJSONDictionary());
-                PluginResult result = new PluginResult(PluginResult.Status.OK, jsonString);
-                result.setKeepCallback(true);
-                callback.sendPluginResult(result);
+    private void allDocs(final JSONArray args, final CallbackContext callback) {
+        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+        result.setKeepCallback(true);
+        callback.sendPluginResult(result);
+
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try{
+                    String dbName = args.getString(0);
+                    Query query = dbs.get(dbName).createAllDocumentsQuery();
+                    query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
+                    query.shouldPrefetch();
+                    query.isInclusiveEnd();
+                    QueryEnumerator allDocsQuery = query.run();
+                    ObjectMapper mapper = new ObjectMapper();
+                    int batch = 1000;
+                    final ArrayList<String> responseBuffer = new ArrayList<String>();
+                    for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
+                        QueryRow row = it.next();
+                        responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
+                        if(responseBuffer.size() > batch){
+                            List<String> buffer = responseBuffer.subList(0,batch);
+                            responseBuffer.removeAll(buffer);
+                            PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",",buffer) + "]");
+                            result.setKeepCallback(true);
+                            callback.sendPluginResult(result);
+                        }
+                    }
+
+                    //send last batch
+                    PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",",responseBuffer) + "]");
+                    result.setKeepCallback(true);
+                    callback.sendPluginResult(result);
+
+                    //close callback
+                    PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
+                    finalResult.setKeepCallback(false);
+                    callback.sendPluginResult(finalResult);
+                }
+                catch(Exception e){
+                    callback.error(e.getMessage());
+                }
             }
-            PluginResult result = new PluginResult(PluginResult.Status.OK, "");
-            result.setKeepCallback(false);
-            callback.sendPluginResult(result);
-        }
-        catch(Exception e){
-            callback.error(e.getMessage());
-        }
+        });
     }
 
     private void get(JSONArray args, CallbackContext callback) {
@@ -290,7 +344,7 @@ public class CBLite extends CordovaPlugin {
     //PLUGIN BOILER PLATE
 
     private Manager startCBLite(Context context) {
-        Manager manager;
+
         try {
 //            Manager.enableLogging(Log.TAG, Log.VERBOSE);
 //            Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
@@ -303,11 +357,11 @@ public class CBLite extends CordovaPlugin {
 //            Manager.enableLogging(Log.TAG_MULTI_STREAM_WRITER, Log.VERBOSE);
 //            Manager.enableLogging(Log.TAG_REMOTE_REQUEST, Log.VERBOSE);
 //            Manager.enableLogging(Log.TAG_ROUTER, Log.VERBOSE);
-            manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
+            dbmgr = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return manager;
+        return dbmgr;
     }
 
     @Override
