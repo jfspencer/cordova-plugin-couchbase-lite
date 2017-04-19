@@ -80,5 +80,6 @@
     <framework src="com.fasterxml.jackson.core:jackson-core:2.5.3"/>
     <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
     <framework src="com.fasterxml.jackson.module:jackson-module-afterburner:2.5.3"/>
+    <framework src="com.couchbase.lite:couchbase-lite-android-forestdb:1.4.0"/>
   </platform>
 </plugin>

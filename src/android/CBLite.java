@@ -10,6 +10,7 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 
+import com.couchbase.lite.DatabaseOptions;
 import com.couchbase.lite.Document;
 import com.couchbase.lite.DocumentChange;
 import com.couchbase.lite.Query;
@@ -40,10 +41,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import javax.xml.datatype.Duration;
 
 public class CBLite extends CordovaPlugin {
 
@@ -133,30 +130,34 @@ public class CBLite extends CordovaPlugin {
         return true;
     }
 
-    private void changesDatabase(JSONArray args, final CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            if (changeListeners == null) {
-                changeListeners = new HashMap<String, Database.ChangeListener>();
-            }
-            if (dbs.get(dbName) != null) {
-                changeListeners.put(dbName, new Database.ChangeListener() {
-                    public void changed(Database.ChangeEvent event) {
-                        List<DocumentChange> changes = event.getChanges();
-                        for (DocumentChange change : changes) {
-                            PluginResult result = new PluginResult(PluginResult.Status.OK, change.getDocumentId());
-                            result.setKeepCallback(true);
-                            callback.sendPluginResult(result);
-                        }
+    private void changesDatabase(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    if (changeListeners == null) {
+                        changeListeners = new HashMap<String, Database.ChangeListener>();
                     }
-                });
+                    if (dbs.get(dbName) != null) {
+                        changeListeners.put(dbName, new Database.ChangeListener() {
+                            public void changed(Database.ChangeEvent event) {
+                                List<DocumentChange> changes = event.getChanges();
+                                for (DocumentChange change : changes) {
+                                    PluginResult result = new PluginResult(PluginResult.Status.OK, change.getDocumentId());
+                                    result.setKeepCallback(true);
+                                    callback.sendPluginResult(result);
+                                }
+                            }
+                        });
 
-                dbs.get(dbName).addChangeListener(changeListeners.get(dbName));
+                        dbs.get(dbName).addChangeListener(changeListeners.get(dbName));
+                    }
+
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
             }
-
-        } catch (final Exception e) {
-            callback.error(e.getMessage());
-        }
+        });
     }
 
     private void changesReplication(final JSONArray args, final CallbackContext callback) {
@@ -219,7 +220,10 @@ public class CBLite extends CordovaPlugin {
                 try {
                     String dbName = args.getString(0);
                     if (dbs == null) dbs = new HashMap<String, Database>();
-                    dbs.put(dbName, dbmgr.getDatabase(dbName));
+                    DatabaseOptions options = new DatabaseOptions();
+                    options.setCreate(true);
+                    options.setStorageType(Manager.FORESTDB_STORAGE);
+                    dbs.put(dbName, dbmgr.openDatabase(dbName, options));
                     callback.success("CBL db init success");
                 } catch (final Exception e) {
                     callback.error(e.getMessage());
@@ -238,17 +242,21 @@ public class CBLite extends CordovaPlugin {
         this.onReset();
     }
 
-    private void stopReplication(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            Database db = dbs.get(dbName);
-            if (db != null) {
-                for (Replication replication : db.getAllReplications()) replication.stop();
-                callback.success("true");
-            } else callback.error("false");
-        } catch (final Exception e) {
-            callback.error(e.getMessage());
-        }
+    private void stopReplication(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    Database db = dbs.get(dbName);
+                    if (db != null) {
+                        for (Replication replication : db.getAllReplications()) replication.stop();
+                        callback.success("true");
+                    } else callback.error("false");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
     private void sync(final JSONArray args, final CallbackContext callback) {
@@ -353,55 +361,67 @@ public class CBLite extends CordovaPlugin {
         });
     }
 
-    private void get(JSONArray args, CallbackContext callback) {
-        try{
-            String dbName = args.getString(0);
-            String id = args.getString(1);
-            Document doc = dbs.get(dbName).getDocument(id);
-            ObjectMapper mapper = new ObjectMapper();
-            String jsonString = mapper.writeValueAsString(doc.getProperties());
-            callback.success(jsonString);
-        }
-        catch(final Exception e){
-            callback.error(e.getMessage());
-        }
-    }
-
-    private void putAttachment(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            String filePath = this.cordova.getActivity().getApplicationContext().getFilesDir() + "/" + args.getString(5) + "/" + args.getString(2);
-            FileInputStream stream = new FileInputStream(filePath);
-            Document doc = dbs.get(dbName).getDocument(args.getString(1));
-            UnsavedRevision newRev = doc.getCurrentRevision().createRevision();
-            newRev.setAttachment(args.getString(3), args.getString(4), stream);
-            newRev.save();
-            callback.success("attachment saved!");
-        } catch (final Exception e) {
-            callback.error(e.getMessage());
-        }
-    }
-
-    private void upsert(JSONArray args, CallbackContext callback) {
-        try{
-            String dbName = args.getString(0);
-            String id = args.getString(1);
-            String jsonString = args.getString(2);
-
-            ObjectMapper mapper = new ObjectMapper();
-
-            Document doc = dbs.get(dbName).getExistingDocument(id);
-            Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
-            if(doc != null) doc.putProperties(mapDoc);
-            else{
-                Document newDoc = dbs.get(dbName).getDocument(id);
-                newDoc.putProperties(mapDoc);
+    private void get(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try{
+                    String dbName = args.getString(0);
+                    String id = args.getString(1);
+                    Document doc = dbs.get(dbName).getDocument(id);
+                    ObjectMapper mapper = new ObjectMapper();
+                    String jsonString = mapper.writeValueAsString(doc.getProperties());
+                    callback.success(jsonString);
+                }
+                catch(final Exception e){
+                    callback.error(e.getMessage());
+                }
             }
-            callback.success("upsert successful");
-        }
-        catch(final Exception e){
-            callback.error(e.getMessage());
-        }
+        });
+    }
+
+    private void putAttachment(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    String filePath = cordova.getActivity().getApplicationContext().getFilesDir() + "/" + args.getString(5) + "/" + args.getString(2);
+                    FileInputStream stream = new FileInputStream(filePath);
+                    Document doc = dbs.get(dbName).getDocument(args.getString(1));
+                    UnsavedRevision newRev = doc.getCurrentRevision().createRevision();
+                    newRev.setAttachment(args.getString(3), args.getString(4), stream);
+                    newRev.save();
+                    callback.success("attachment saved!");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
+    }
+
+    private void upsert(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try{
+                    String dbName = args.getString(0);
+                    String id = args.getString(1);
+                    String jsonString = args.getString(2);
+
+                    ObjectMapper mapper = new ObjectMapper();
+
+                    Document doc = dbs.get(dbName).getExistingDocument(id);
+                    Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                    if(doc != null) doc.putProperties(mapDoc);
+                    else{
+                        Document newDoc = dbs.get(dbName).getDocument(id);
+                        newDoc.putProperties(mapDoc);
+                    }
+                    callback.success("upsert successful");
+                }
+                catch(final Exception e){
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
     //PLUGIN BOILER PLATE
