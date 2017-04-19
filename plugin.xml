@@ -30,6 +30,7 @@
     <header-file src="lib/ios/CBLRegisterJSViewCompiler.h"/>
     <source-file framework="true" src="lib/ios/libCBLJSViewCompiler.a"/>
     <source-file framework="true" src="lib/ios/CouchbaseLite.framework/CouchbaseLite.a"/>
+    <source-file framework="true" src="lib/ios/libCBLForestDBStorage.a"/>
     <source-file framework="true" src="lib/ios/CouchbaseLiteListener.framework/CouchbaseLiteListener.a"/>
     <header-file src="lib/ios/CouchbaseLiteListener.framework/Headers/CBLListener.h"/>
     <header-file src="lib/ios/CouchbaseLiteListener.framework/Headers/CouchbaseLiteListener.h"/>
