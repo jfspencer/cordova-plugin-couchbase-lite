@@ -66,27 +66,34 @@ public class CBLite extends CordovaPlugin {
     @Override
     public void onReset() {
         //cancel change listeners
-        for (String dbName : changeListeners.keySet()) {
-            for (Database.ChangeListener listener : changeListeners.values()) {
-                dbs.get(dbName).removeChangeListener(listener);
+        if(changeListeners != null){
+            for (String dbName : changeListeners.keySet()) {
+                for (Database.ChangeListener listener : changeListeners.values()) {
+                    dbs.get(dbName).removeChangeListener(listener);
+                }
             }
         }
 
-        for (String dbName : replicationListeners.keySet()) {
-            for (Replication.ChangeListener listener : replicationListeners.values()) {
-                replications.get(dbName).removeChangeListener(listener);
+        if(replicationListeners != null){
+            for (String dbName : replicationListeners.keySet()) {
+                for (Replication.ChangeListener listener : replicationListeners.values()) {
+                    replications.get(dbName).removeChangeListener(listener);
+                }
             }
         }
+
 
         //cancel replications
-        for (Replication replication : replications.values()) {
-            replication.stop();
+        if(replications != null){
+            for (Replication replication : replications.values()) {
+                replication.stop();
+            }
         }
 
-        if (!dbs.isEmpty()) dbs.clear();
-        if (!changeListeners.isEmpty()) changeListeners.clear();
-        if (!replicationListeners.isEmpty()) replicationListeners.clear();
-        if (!replications.isEmpty()) replications.clear();
+        if (dbs != null) dbs.clear();
+        if (changeListeners != null) changeListeners.clear();
+        if (replicationListeners != null) replicationListeners.clear();
+        if (replications != null) replications.clear();
     }
 
     @Override
