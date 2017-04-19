@@ -135,7 +135,7 @@ static NSThread *cblThread;
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         CBLQuery* query = [dbs[dbName] createAllDocumentsQuery];
-        NSInteger batch = 500;
+        NSInteger batch = 1000;
         query.allDocsMode = kCBLAllDocs;
         query.prefetch = YES;
         //query.limit = limit;
