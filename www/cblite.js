@@ -110,7 +110,7 @@ module.exports.sync = function sync(options) {
 module.exports.allDocs$ = function allDocs$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
-                if(_.isEmpty(res))subscriber.complete();
+                if(_.isUndefined(res))subscriber.complete();
                 else subscriber.next(eval("(" + res + ")"));
             },
             function (err) {subscriber.error(err);}, "CBLite", "allDocs", options);

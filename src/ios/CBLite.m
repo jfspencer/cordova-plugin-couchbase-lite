@@ -104,8 +104,8 @@ static NSThread *cblThread;
 
         if(replications == nil){replications = [NSMutableDictionary dictionary];}
 
-        if(replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_push"]] != nil){ [replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_push"]] stop]; }
-        if(replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_pull"]] != nil){ [replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_pull"]] stop]; }
+        if(replications[[NSString stringWithFormat:@"%@%@", dbName, @"_push"]] != nil){ [replications[[NSString stringWithFormat:@"%@%@", dbName, @"_push"]] stop]; }
+        if(replications[[NSString stringWithFormat:@"%@%@", dbName, @"_pull"]] != nil){ [replications[[NSString stringWithFormat:@"%@%@", dbName, @"_pull"]] stop]; }
 
         CBLReplication *push = [dbs[dbName] createPushReplication: [NSURL URLWithString: syncURL]];
         CBLReplication *pull = [dbs[dbName] createPullReplication:[NSURL URLWithString: syncURL]];
@@ -119,8 +119,8 @@ static NSThread *cblThread;
 
         [push start]; [pull start];
 
-        replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_push"]] = push;
-        replications[[NSString stringWithFormat:@"%@/%@", dbName, @"_pull"]] = pull;
+        replications[[NSString stringWithFormat:@"%@%@", dbName, @"_push"]] = push;
+        replications[[NSString stringWithFormat:@"%@%@", dbName, @"_pull"]] = pull;
 
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"native sync started"];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
@@ -129,28 +129,43 @@ static NSThread *cblThread;
 
 #pragma mark READ
 - (void)allDocs:(CDVInvokedUrlCommand *)urlCommand {
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+    [pluginResult setKeepCallbackAsBool:YES];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-
         CBLQuery* query = [dbs[dbName] createAllDocumentsQuery];
+        NSInteger batch = 500;
         query.allDocsMode = kCBLAllDocs;
         query.prefetch = YES;
         //query.limit = limit;
         NSError *error2;
         CBLQueryEnumerator* result = [query run: &error2];
+        NSMutableArray *responseBuffer = [NSMutableArray array];
         for (CBLQueryRow* row in result) {
             NSError *error;
             NSData *data = [NSJSONSerialization dataWithJSONObject:row.documentProperties
                                                            options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
                                                              error:&error];
             NSString *json = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:json];
-            [pluginResult setKeepCallbackAsBool:YES];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            [responseBuffer addObject:json];
+            if([responseBuffer count] > batch){
+                NSString *response = [[responseBuffer subarrayWithRange:NSMakeRange(0, batch)] componentsJoinedByString:@","];
+                [responseBuffer removeObjectsInRange:NSMakeRange(0, batch)];
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", response]];
+                [pluginResult setKeepCallbackAsBool:YES];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            }
         }
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@""];
-        [pluginResult setKeepCallbackAsBool:NO];
+
+        NSString *finalResponse = [responseBuffer componentsJoinedByString:@","];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", finalResponse]];
+        [pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+
+        CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+        [finalPluginResult setKeepCallbackAsBool:NO];
+        [self.commandDelegate sendPluginResult:finalPluginResult callbackId:urlCommand.callbackId];
     });
 }
 
