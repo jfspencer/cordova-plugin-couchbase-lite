@@ -51,6 +51,7 @@ public class CBLite extends CordovaPlugin {
     private static HashMap<String, Replication.ChangeListener> replicationListeners = null;
     private static int runnerCount = 0;
     final static int MAX_THREADS = 3;
+    private static ObjectMapper mapper = new ObjectMapper();
 
     public CBLite() {
         super();
@@ -302,7 +303,6 @@ public class CBLite extends CordovaPlugin {
                     final int totalDocs = dbs.get(dbName).getDocumentCount();
                     final int batch = 500;
                     final int segments = batch > totalDocs ? 1 : totalDocs / batch;
-                    final ObjectMapper mapper = new ObjectMapper();
                     ArrayList<Integer> skipList = new ArrayList<Integer>();
                     for(int i = 1; i <= segments; i++) skipList.add(i * batch);
                     for(Integer skipCount: skipList){
@@ -367,10 +367,23 @@ public class CBLite extends CordovaPlugin {
                 try{
                     String dbName = args.getString(0);
                     String id = args.getString(1);
-                    Document doc = dbs.get(dbName).getDocument(id);
-                    ObjectMapper mapper = new ObjectMapper();
-                    String jsonString = mapper.writeValueAsString(doc.getProperties());
-                    callback.success(jsonString);
+                    Boolean isLocal = args.getBoolean(3);
+
+                    if(isLocal){
+                        Map<String, Object> localDoc = dbs.get(dbName).getExistingLocalDocument(id);
+                        if(localDoc != null) {
+                            callback.success(mapper.writeValueAsString(localDoc));
+                        }
+                        else callback.error("null");
+                    }
+                    else {
+                        Document doc = dbs.get(dbName).getExistingDocument(id);
+                        if(doc != null){
+                            String jsonString = mapper.writeValueAsString(doc.getProperties());
+                            callback.success(jsonString);
+                        }
+                        else callback.error("null");
+                    }
                 }
                 catch(final Exception e){
                     callback.error(e.getMessage());
@@ -405,17 +418,25 @@ public class CBLite extends CordovaPlugin {
                     String dbName = args.getString(0);
                     String id = args.getString(1);
                     String jsonString = args.getString(2);
+                    Boolean isLocal = args.getBoolean(3);
 
                     ObjectMapper mapper = new ObjectMapper();
 
-                    Document doc = dbs.get(dbName).getExistingDocument(id);
-                    Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
-                    if(doc != null) doc.putProperties(mapDoc);
-                    else{
-                        Document newDoc = dbs.get(dbName).getDocument(id);
-                        newDoc.putProperties(mapDoc);
+                    if (isLocal) {
+                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                        dbs.get(dbName).putLocalDocument(id, mapDoc);
+                        callback.success("local upsert successful");
                     }
-                    callback.success("upsert successful");
+                    else {
+                        Document doc = dbs.get(dbName).getExistingDocument(id);
+                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                        if(doc != null) doc.putProperties(mapDoc);
+                        else{
+                            Document newDoc = dbs.get(dbName).getDocument(id);
+                            newDoc.putProperties(mapDoc);
+                        }
+                        callback.success("upsert successful");
+                    }
                 }
                 catch(final Exception e){
                     callback.error(e.getMessage());

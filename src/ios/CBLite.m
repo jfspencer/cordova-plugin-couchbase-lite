@@ -200,14 +200,29 @@ static NSThread *cblThread;
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSString *id = [urlCommand.arguments objectAtIndex:1];
-        CBLDocument *doc = [dbs[dbName] documentWithID: id];
-        NSError *error2;
-        NSData *json = [NSJSONSerialization dataWithJSONObject:doc.properties
-                                                       options:0 // Pass 0 if you don't care about the readability of the generated string
-                                                         error:&error2];
-        CDVPluginResult* pluginResult =
-        [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        NSString *isLocal = [urlCommand.arguments objectAtIndex:2];
+
+        if([isLocal isEqualToString:@"true"]){
+            CBLJSONDict *doc = [dbs[dbName] existingLocalDocumentWithID: id];
+            NSError *error2;
+            NSData *json = [NSJSONSerialization dataWithJSONObject:doc options:0 error:&error2];
+            CDVPluginResult* pluginResult =
+            [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
+        else {
+            CBLDocument *doc = [dbs[dbName] existingDocumentWithID: id];
+            if(doc == nil){
+                CDVPluginResult* pluginResult =
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"null"];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            }
+            NSError *error2;
+            NSData *json = [NSJSONSerialization dataWithJSONObject:doc.properties options:0 error:&error2];
+            CDVPluginResult* pluginResult =
+            [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
     });
 }
 
@@ -246,32 +261,41 @@ static NSThread *cblThread;
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSString* docId = [urlCommand.arguments objectAtIndex:1];
         NSString* jsonString = [urlCommand.arguments objectAtIndex:2];
+        NSString *isLocal = [urlCommand.arguments objectAtIndex:2];
 
         NSStringEncoding  encoding = NSUTF8StringEncoding;
         NSData * jsonData = [jsonString dataUsingEncoding:encoding];
         NSError * error=nil;
         NSDictionary * jsonDictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&error];
 
-        //try to get doc
-        CBLDocument* doc = [dbs[dbName] existingDocumentWithID: docId];
-        //if exists, force update
-        if(doc != nil){
-            if (![doc putProperties: jsonDictionary error: &error]) {
-                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"updated document"];
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
-            }
+
+
+        if([isLocal isEqualToString:@"true"]){
+            NSError * _Nullable __autoreleasing * error2 = NULL;
+            [dbs[dbName] putLocalDocument:jsonDictionary withID:docId error: error2];
         }
-        //if doesnt exist, create
         else {
-            CBLDocument* newDoc = [dbs[dbName] documentWithID: docId];
-            NSError* error;
-            if (![newDoc putProperties: jsonDictionary error: &error]) {
-                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"failed to create document"];
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            //try to get doc
+            CBLDocument* doc = [dbs[dbName] existingDocumentWithID: docId];
+            //if exists, force update
+            if(doc != nil){
+                if (![doc putProperties: jsonDictionary error: &error]) {
+                    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"updated document"];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                }
             }
+            //if doesnt exist, create
             else {
-                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"created document"];
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                CBLDocument* newDoc = [dbs[dbName] documentWithID: docId];
+                NSError* error;
+                if (![newDoc putProperties: jsonDictionary error: &error]) {
+                    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"failed to create document"];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                }
+                else {
+                    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"created document"];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                }
             }
         }
     });

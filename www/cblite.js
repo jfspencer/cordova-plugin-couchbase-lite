@@ -8,12 +8,14 @@ var exec = require('cordova/exec');
  * @param options:[dbName]
  * @returns docId:Rx
  */
-module.exports.changesDatabase$ = function changes$(options) {
+module.exports.changesDatabase$ = function changesDatabase$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
                 subscriber.next(res);
             },
-            function (err) {subscriber.error(err);}, "CBLite", "changesDatabase", options);
+            function (err) {
+                subscriber.error(err);
+            }, "CBLite", "changesDatabase", options);
     });
 };
 
@@ -21,12 +23,14 @@ module.exports.changesDatabase$ = function changes$(options) {
  * @param options:[dbName]
  * @returns docId:Rx
  */
-module.exports.changesReplication$ = function changes$(options) {
+module.exports.changesReplication$ = function changesReplication$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
                 subscriber.next(res);
             },
-            function (err) {subscriber.error(err);}, "CBLite", "changesReplication", options);
+            function (err) {
+                subscriber.error(err);
+            }, "CBLite", "changesReplication", options);
     });
 };
 
@@ -131,7 +135,7 @@ module.exports.allDocs$ = function allDocs$(options) {
 };
 
 /**
- * @param options:[dbName]
+ * @param options:[dbName:string, docId:string, isLocal:boolean]
  * @returns JSON:Object
  */
 module.exports.get = function get(options) {
@@ -154,7 +158,7 @@ module.exports.putAttachment = function putAttachment(options) {
 
 //creates or updates a document requires a doc id to present, input data will always be written as winning revision
 /**
- * @param options:[dbName:string, docId:string, jsonString:string]
+ * @param options:[dbName:string, docId:string, jsonString:string, isLocal:boolean]
  * @returns message:string
  */
 module.exports.upsert = function upsert(options) {
