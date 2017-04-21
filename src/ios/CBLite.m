@@ -200,15 +200,22 @@ static NSThread *cblThread;
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSString *id = [urlCommand.arguments objectAtIndex:1];
-        NSString *isLocal = [urlCommand.arguments objectAtIndex:2];
+        BOOL isLocal = (BOOL)[urlCommand.arguments objectAtIndex:2];
 
-        if([isLocal isEqualToString:@"true"]){
+        if(isLocal){
             CBLJSONDict *doc = [dbs[dbName] existingLocalDocumentWithID: id];
-            NSError *error2;
-            NSData *json = [NSJSONSerialization dataWithJSONObject:doc options:0 error:&error2];
-            CDVPluginResult* pluginResult =
-            [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            if(doc != NULL){
+                NSError *error2;
+                NSData *json = [NSJSONSerialization dataWithJSONObject:doc options:0 error:&error2];
+                CDVPluginResult* pluginResult =
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            }
+            else {
+                CDVPluginResult* pluginResult =
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString: @"null"];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            }
         }
         else {
             CBLDocument *doc = [dbs[dbName] existingDocumentWithID: id];
@@ -261,7 +268,7 @@ static NSThread *cblThread;
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSString* docId = [urlCommand.arguments objectAtIndex:1];
         NSString* jsonString = [urlCommand.arguments objectAtIndex:2];
-        NSString *isLocal = [urlCommand.arguments objectAtIndex:2];
+        BOOL isLocal = (BOOL)[urlCommand.arguments objectAtIndex:3];
 
         NSStringEncoding  encoding = NSUTF8StringEncoding;
         NSData * jsonData = [jsonString dataUsingEncoding:encoding];
@@ -270,7 +277,7 @@ static NSThread *cblThread;
 
 
 
-        if([isLocal isEqualToString:@"true"]){
+        if(isLocal){
             NSError * _Nullable __autoreleasing * error2 = NULL;
             [dbs[dbName] putLocalDocument:jsonDictionary withID:docId error: error2];
         }

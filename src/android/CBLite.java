@@ -26,6 +26,7 @@ import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
 import com.couchbase.lite.javascript.JavaScriptViewCompiler;
+import com.couchbase.lite.util.Log;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -135,15 +136,18 @@ public class CBLite extends CordovaPlugin {
         PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
         result.setKeepCallback(true);
         callback.sendPluginResult(result);
+
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
                     String dbName = args.getString(0);
+
                     if (changeListeners == null) {
                         changeListeners = new HashMap<String, Database.ChangeListener>();
                     }
                     if (dbs.get(dbName) != null) {
                         changeListeners.put(dbName, new Database.ChangeListener() {
+                            @Override
                             public void changed(Database.ChangeEvent event) {
                                 List<DocumentChange> changes = event.getChanges();
                                 for (DocumentChange change : changes) {
@@ -156,7 +160,6 @@ public class CBLite extends CordovaPlugin {
 
                         dbs.get(dbName).addChangeListener(changeListeners.get(dbName));
                     }
-
                 } catch (final Exception e) {
                     callback.error(e.getMessage());
                 }
@@ -282,6 +285,8 @@ public class CBLite extends CordovaPlugin {
                     Authenticator auth = AuthenticatorFactory.createBasicAuthenticator(user, pass);
                     push.setAuthenticator(auth);
                     pull.setAuthenticator(auth);
+                    push.setContinuous(true);
+                    pull.setContinuous(true);
                     push.start();
                     pull.start();
 
@@ -454,7 +459,6 @@ public class CBLite extends CordovaPlugin {
     //PLUGIN BOILER PLATE
 
     private Manager startCBLite(Context context) {
-
         try {
 //            Manager.enableLogging(Log.TAG, Log.VERBOSE);
 //            Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
