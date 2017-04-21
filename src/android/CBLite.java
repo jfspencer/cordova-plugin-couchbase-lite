@@ -367,7 +367,7 @@ public class CBLite extends CordovaPlugin {
                 try{
                     String dbName = args.getString(0);
                     String id = args.getString(1);
-                    Boolean isLocal = args.getBoolean(3);
+                    Boolean isLocal = args.getBoolean(2);
 
                     if(isLocal){
                         Map<String, Object> localDoc = dbs.get(dbName).getExistingLocalDocument(id);
