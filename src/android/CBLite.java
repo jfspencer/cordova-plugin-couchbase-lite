@@ -132,6 +132,9 @@ public class CBLite extends CordovaPlugin {
     }
 
     private void changesDatabase(final JSONArray args, final CallbackContext callback) {
+        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+        result.setKeepCallback(true);
+        callback.sendPluginResult(result);
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
@@ -162,6 +165,9 @@ public class CBLite extends CordovaPlugin {
     }
 
     private void changesReplication(final JSONArray args, final CallbackContext callback) {
+        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+        result.setKeepCallback(true);
+        callback.sendPluginResult(result);
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
