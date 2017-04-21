@@ -26,7 +26,7 @@ module.exports.changesDatabase$ = function changesDatabase$(options) {
 module.exports.changesReplication$ = function changesReplication$(options) {
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
-                subscriber.next(res);
+                subscriber.next(eval("(" + res + ")"));
             },
             function (err) {
                 subscriber.error(err);
