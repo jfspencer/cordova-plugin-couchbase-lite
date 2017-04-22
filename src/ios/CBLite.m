@@ -32,7 +32,7 @@ static NSThread *cblThread;
              for (CBLDatabaseChange* change in changes){
                  CDVPluginResult* pluginResult =
                  [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
-                                  messageAsString:[NSString stringWithFormat:@"{\"id\":%@,\"is_delete\":%@}", change.documentID, change.isDeletion? @"true":@"false"]];
+                                  messageAsString:[NSString stringWithFormat:@"{\"id\":\"%@\",\"is_delete\":%@}", change.documentID, change.isDeletion? @"true":@"false"]];
                  [pluginResult setKeepCallbackAsBool:YES];
                  [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
              }

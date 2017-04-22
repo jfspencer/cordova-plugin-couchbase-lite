@@ -152,7 +152,7 @@ public class CBLite extends CordovaPlugin {
                                 List<DocumentChange> changes = event.getChanges();
                                 for (DocumentChange change : changes) {
                                     PluginResult result = new PluginResult(PluginResult.Status.OK,
-                                            "{\"id\":"+ change.getDocumentId() + ",\"is_delete\":" + change.isDeletion() + "}");
+                                            "{\"id\":"+ "\"" +change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() + "}");
                                     result.setKeepCallback(true);
                                     callback.sendPluginResult(result);
                                 }
