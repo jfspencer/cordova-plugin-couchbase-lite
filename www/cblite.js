@@ -135,20 +135,6 @@ module.exports.allDocs$ = function allDocs$(options) {
 };
 
 /**
- * @param options:[dbName]
- * @returns allDocs:Rx<[docs...]>
- */
-module.exports.allDocsFromSequence$ = function allDocsFromSequence$(options) {
-    return Rx.Observable.create(function (subscriber) {
-        exec(function (res) {
-                if (_.isEmpty(res)) subscriber.complete();
-                else subscriber.next(eval("(" + res + ")"));
-            },
-            function (err) {subscriber.error(err);}, "CBLite", "allDocsFromSequence", options);
-    });
-};
-
-/**
  * @param options:[dbName:string, docId:string, isLocal:boolean]
  * @returns JSON:Object
  */

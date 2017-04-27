@@ -123,7 +123,6 @@ public class CBLite extends CordovaPlugin {
 
             //READ
         else if (action.equals("allDocs")) allDocs(args, callback);
-        else if (action.equals("allDocsFromSequence")) allDocsFromSequence(args, callback);
         else if (action.equals("get")) get(args, callback);
         else if (action.equals("getDocRev")) getDocRev(args, callback);
 
@@ -142,7 +141,7 @@ public class CBLite extends CordovaPlugin {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
-                    String dbName = args.getString(0);
+                    final String dbName = args.getString(0);
 
                     if (changeListeners == null) {
                         changeListeners = new HashMap<String, Database.ChangeListener>();
@@ -152,9 +151,10 @@ public class CBLite extends CordovaPlugin {
                             @Override
                             public void changed(Database.ChangeEvent event) {
                                 List<DocumentChange> changes = event.getChanges();
+                                long lastSequence = dbs.get(dbName).getLastSequenceNumber();
                                 for (DocumentChange change : changes) {
                                     PluginResult result = new PluginResult(PluginResult.Status.OK,
-                                            "{\"id\":" + "\"" + change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() + "}");
+                                            "{\"id\":" + "\"" + change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() +  ",\"seq_num\":" + lastSequence + "}");
                                     result.setKeepCallback(true);
                                     callback.sendPluginResult(result);
                                 }
@@ -311,109 +311,65 @@ public class CBLite extends CordovaPlugin {
         callback.sendPluginResult(firstResult);
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
-                //create batch queries
-                try {
+                try{
                     final String dbName = args.getString(0);
                     final int totalDocs = dbs.get(dbName).getDocumentCount();
                     final int batch = 500;
                     final int segments = batch > totalDocs ? 1 : totalDocs / batch;
-                    ArrayList<Long> skipList = new ArrayList<Long>();
-                    for (long i = 1; i <= segments; i++) skipList.add(i * batch);
-                    allDocsProcessor(skipList, dbName, totalDocs, batch, Query.AllDocsMode.ALL_DOCS, callback);
-                } catch (Exception e) {
-                    PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
-                    result.setKeepCallback(false);
-                    callback.sendPluginResult(result);
-                }
-            }
-        });
-    }
+                    ArrayList<Integer> skipList = new ArrayList<Integer>();
+                    for(int i = 1; i <= segments; i++) skipList.add(i * batch);
+                    for(Integer skipCount: skipList){
+                        final int innerSkip = skipCount;
+                        ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
+                        Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
+                            @Override
+                            public Boolean call() throws Exception {
+                                Query query = dbs.get(dbName).createAllDocumentsQuery();
+                                query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
+                                query.setPrefetch(true);
+                                query.setLimit(batch);
+                                query.setSkip(innerSkip);
+                                try{
+                                    QueryEnumerator allDocsQuery = query.run();
+                                    final ArrayList<String> responseBuffer = new ArrayList<String>();
 
-    private void allDocsFromSequence(final JSONArray args, final CallbackContext callback) {
-        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
-        result.setKeepCallback(true);
-        callback.sendPluginResult(result);
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                //create batch queries
-                try {
-                    final String dbName = args.getString(0);
-                    final long savedSeqNum = args.getLong(1);
-                    final int batch = 500;
-                    final long totalDocs = dbs.get(dbName).getDocumentCount();
-                    final long sequenceLength = dbs.get(dbName).getLastSequenceNumber() - savedSeqNum;
-                    final long initialSkipCount = dbs.get(dbName).getDocumentCount() - (sequenceLength + 1);
-
-                    final long segments = batch > sequenceLength ? 1 : sequenceLength / batch;
-                    ArrayList<Long> skipList = new ArrayList<Long>();
-                    skipList.add(initialSkipCount);
-                    long lastSkipCount = initialSkipCount;
-                    for (long i = 1; i <= segments; i++) {
-                        skipList.add(lastSkipCount + batch);
-                        lastSkipCount += batch;
-                    }
-                    allDocsProcessor(skipList, dbName, totalDocs, batch, Query.AllDocsMode.BY_SEQUENCE, callback);
-                } catch (Exception e) {
-                    PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
-                    result.setKeepCallback(false);
-                    callback.sendPluginResult(result);
-                }
-            }
-        });
-    }
-
-    private void allDocsProcessor(ArrayList<Long> skipList, final String dbName, final long totalDocs, final int batch, final Query.AllDocsMode mode, final CallbackContext callback) {
-        try {
-            for (Long skipCount : skipList) {
-                final long innerSkip = skipCount;
-                ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
-
-                Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        Query query = dbs.get(dbName).createAllDocumentsQuery();
-                        query.setAllDocsMode(mode);
-                        query.setPrefetch(true);
-                        query.setLimit(batch);
-                        query.setSkip((int) innerSkip);
-                        try {
-                            QueryEnumerator allDocsQuery = query.run();
-                            final ArrayList<String> responseBuffer = new ArrayList<String>();
-
-                            for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
-                                QueryRow row = it.next();
-                                responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
+                                    for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
+                                        QueryRow row = it.next();
+                                        responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
+                                    }
+                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",",responseBuffer) + "]");
+                                    result.setKeepCallback(true);
+                                    callback.sendPluginResult(result);
+                                    if(totalDocs - innerSkip < batch){
+                                        PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
+                                        finalResult.setKeepCallback(false);
+                                        callback.sendPluginResult(finalResult);
+                                        runnerCount = 0;
+                                    }
+                                }
+                                catch(Exception e){
+                                    PluginResult result = new PluginResult(PluginResult.Status.ERROR,e.getMessage());
+                                    result.setKeepCallback(false);
+                                    callback.sendPluginResult(result);
+                                    return false;
+                                }
+                                return true;
                             }
-                            PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",", responseBuffer) + "]");
-                            result.setKeepCallback(true);
-                            callback.sendPluginResult(result);
-                            if (totalDocs - innerSkip < batch) {
-                                //close callback
-                                PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
-                                finalResult.setKeepCallback(false);
-                                callback.sendPluginResult(finalResult);
-                                runnerCount = 0;
-                            }
-                        } catch (Exception e) {
-                            PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
-                            result.setKeepCallback(false);
-                            callback.sendPluginResult(result);
-                            return false;
+                        });
+                        runnerCount += 1;
+                        if(runnerCount >= MAX_THREADS) {
+                            isComplete.get();
+                            runnerCount = 0;
                         }
-                        return true;
                     }
-                });
-                runnerCount += 1;
-                if (runnerCount >= MAX_THREADS) {
-                    isComplete.get();
-                    runnerCount = 0;
+                }
+                catch(Exception e){
+                    PluginResult result = new PluginResult(PluginResult.Status.ERROR,e.getMessage());
+                    result.setKeepCallback(false);
+                    callback.sendPluginResult(result);
                 }
             }
-        } catch (Exception e) {
-            PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
-            result.setKeepCallback(false);
-            callback.sendPluginResult(result);
-        }
+        });
     }
 
     private void get(final JSONArray args, final CallbackContext callback) {
