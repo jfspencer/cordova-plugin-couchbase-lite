@@ -75,7 +75,7 @@ public class CBLite extends CordovaPlugin {
     @Override
     public void onReset() {
         //cancel change listeners
-        if(changeListeners != null){
+        if (changeListeners != null) {
             for (String dbName : changeListeners.keySet()) {
                 for (Database.ChangeListener listener : changeListeners.values()) {
                     dbs.get(dbName).removeChangeListener(listener);
@@ -83,7 +83,7 @@ public class CBLite extends CordovaPlugin {
             }
         }
 
-        if(replicationListeners != null){
+        if (replicationListeners != null) {
             for (String dbName : replicationListeners.keySet()) {
                 for (Replication.ChangeListener listener : replicationListeners.values()) {
                     replications.get(dbName).removeChangeListener(listener);
@@ -93,7 +93,7 @@ public class CBLite extends CordovaPlugin {
 
 
         //cancel replications
-        if(replications != null){
+        if (replications != null) {
             for (Replication replication : replications.values()) {
                 replication.stop();
             }
@@ -123,7 +123,9 @@ public class CBLite extends CordovaPlugin {
 
             //READ
         else if (action.equals("allDocs")) allDocs(args, callback);
+        else if (action.equals("allDocsFromSequence")) allDocsFromSequence(args, callback);
         else if (action.equals("get")) get(args, callback);
+        else if (action.equals("getDocRev")) getDocRev(args, callback);
 
             //WRITE
         else if (action.equals("putAttachment")) putAttachment(args, callback);
@@ -152,7 +154,7 @@ public class CBLite extends CordovaPlugin {
                                 List<DocumentChange> changes = event.getChanges();
                                 for (DocumentChange change : changes) {
                                     PluginResult result = new PluginResult(PluginResult.Status.OK,
-                                            "{\"id\":"+ "\"" +change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() + "}");
+                                            "{\"id\":" + "\"" + change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() + "}");
                                     result.setKeepCallback(true);
                                     callback.sendPluginResult(result);
                                 }
@@ -279,7 +281,7 @@ public class CBLite extends CordovaPlugin {
                     String user = args.getString(2);
                     String pass = args.getString(3);
 
-                    if(replications == null) replications = new HashMap<String, Replication>();
+                    if (replications == null) replications = new HashMap<String, Replication>();
 
                     Replication push = dbs.get(dbName).createPushReplication(syncUrl);
                     Replication pull = dbs.get(dbName).createPullReplication(syncUrl);
@@ -291,7 +293,7 @@ public class CBLite extends CordovaPlugin {
                     push.start();
                     pull.start();
 
-                    replications.put(dbName + "_push",push);
+                    replications.put(dbName + "_push", push);
                     replications.put(dbName + "_pull", pull);
 
                     callback.success("true");
@@ -310,62 +312,16 @@ public class CBLite extends CordovaPlugin {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 //create batch queries
-                try{
+                try {
                     final String dbName = args.getString(0);
                     final int totalDocs = dbs.get(dbName).getDocumentCount();
                     final int batch = 500;
                     final int segments = batch > totalDocs ? 1 : totalDocs / batch;
-                    ArrayList<Integer> skipList = new ArrayList<Integer>();
-                    for(int i = 1; i <= segments; i++) skipList.add(i * batch);
-                    for(Integer skipCount: skipList){
-                        final int innerSkip = skipCount;
-                        ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
-
-                        Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
-                            @Override
-                            public Boolean call() throws Exception {
-                                Query query = dbs.get(dbName).createAllDocumentsQuery();
-                                query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
-                                query.setPrefetch(true);
-                                query.setLimit(batch);
-                                query.setSkip(innerSkip);
-                                try{
-                                    QueryEnumerator allDocsQuery = query.run();
-                                    final ArrayList<String> responseBuffer = new ArrayList<String>();
-
-                                    for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
-                                        QueryRow row = it.next();
-                                        responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
-                                    }
-                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",",responseBuffer) + "]");
-                                    result.setKeepCallback(true);
-                                    callback.sendPluginResult(result);
-                                    if(totalDocs - innerSkip < batch){
-                                        //close callback
-                                        PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
-                                        finalResult.setKeepCallback(false);
-                                        callback.sendPluginResult(finalResult);
-                                        runnerCount = 0;
-                                    }
-                                }
-                                catch(Exception e){
-                                    PluginResult result = new PluginResult(PluginResult.Status.ERROR,e.getMessage());
-                                    result.setKeepCallback(false);
-                                    callback.sendPluginResult(result);
-                                    return false;
-                                }
-                                return true;
-                            }
-                        });
-                        runnerCount += 1;
-                        if(runnerCount >= MAX_THREADS) {
-                            isComplete.get();
-                            runnerCount = 0;
-                        }
-                    }
-                }
-                catch(Exception e){
-                    PluginResult result = new PluginResult(PluginResult.Status.ERROR,e.getMessage());
+                    ArrayList<Long> skipList = new ArrayList<Long>();
+                    for (long i = 1; i <= segments; i++) skipList.add(i * batch);
+                    allDocsProcessor(skipList, dbName, totalDocs, batch, Query.AllDocsMode.ALL_DOCS, callback);
+                } catch (Exception e) {
+                    PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
                     result.setKeepCallback(false);
                     callback.sendPluginResult(result);
                 }
@@ -373,31 +329,133 @@ public class CBLite extends CordovaPlugin {
         });
     }
 
+    private void allDocsFromSequence(final JSONArray args, final CallbackContext callback) {
+        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+        result.setKeepCallback(true);
+        callback.sendPluginResult(result);
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                //create batch queries
+                try {
+                    final String dbName = args.getString(0);
+                    final long savedSeqNum = args.getLong(1);
+                    final int batch = 500;
+                    final long totalDocs = dbs.get(dbName).getDocumentCount();
+                    final long sequenceLength = dbs.get(dbName).getLastSequenceNumber() - savedSeqNum;
+                    final long initialSkipCount = dbs.get(dbName).getDocumentCount() - (sequenceLength + 1);
+
+                    final long segments = batch > sequenceLength ? 1 : sequenceLength / batch;
+                    ArrayList<Long> skipList = new ArrayList<Long>();
+                    skipList.add(initialSkipCount);
+                    long lastSkipCount = initialSkipCount;
+                    for (long i = 1; i <= segments; i++) {
+                        skipList.add(lastSkipCount + batch);
+                        lastSkipCount += batch;
+                    }
+                    allDocsProcessor(skipList, dbName, totalDocs, batch, Query.AllDocsMode.BY_SEQUENCE, callback);
+                } catch (Exception e) {
+                    PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+                    result.setKeepCallback(false);
+                    callback.sendPluginResult(result);
+                }
+            }
+        });
+    }
+
+    private void allDocsProcessor(ArrayList<Long> skipList, final String dbName, final long totalDocs, final int batch, final Query.AllDocsMode mode, final CallbackContext callback) {
+        try {
+            for (Long skipCount : skipList) {
+                final long innerSkip = skipCount;
+                ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
+
+                Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
+                    @Override
+                    public Boolean call() throws Exception {
+                        Query query = dbs.get(dbName).createAllDocumentsQuery();
+                        query.setAllDocsMode(mode);
+                        query.setPrefetch(true);
+                        query.setLimit(batch);
+                        query.setSkip((int) innerSkip);
+                        try {
+                            QueryEnumerator allDocsQuery = query.run();
+                            final ArrayList<String> responseBuffer = new ArrayList<String>();
+
+                            for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
+                                QueryRow row = it.next();
+                                responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
+                            }
+                            PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",", responseBuffer) + "]");
+                            result.setKeepCallback(true);
+                            callback.sendPluginResult(result);
+                            if (totalDocs - innerSkip < batch) {
+                                //close callback
+                                PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
+                                finalResult.setKeepCallback(false);
+                                callback.sendPluginResult(finalResult);
+                                runnerCount = 0;
+                            }
+                        } catch (Exception e) {
+                            PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+                            result.setKeepCallback(false);
+                            callback.sendPluginResult(result);
+                            return false;
+                        }
+                        return true;
+                    }
+                });
+                runnerCount += 1;
+                if (runnerCount >= MAX_THREADS) {
+                    isComplete.get();
+                    runnerCount = 0;
+                }
+            }
+        } catch (Exception e) {
+            PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+            result.setKeepCallback(false);
+            callback.sendPluginResult(result);
+        }
+    }
+
     private void get(final JSONArray args, final CallbackContext callback) {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
-                try{
+                try {
                     String dbName = args.getString(0);
                     String id = args.getString(1);
                     Boolean isLocal = args.getBoolean(2);
 
-                    if(isLocal){
+                    if (isLocal) {
                         Map<String, Object> localDoc = dbs.get(dbName).getExistingLocalDocument(id);
-                        if(localDoc != null) {
+                        if (localDoc != null) {
                             callback.success(mapper.writeValueAsString(localDoc));
-                        }
-                        else callback.error("null");
-                    }
-                    else {
+                        } else callback.error("null");
+                    } else {
                         Document doc = dbs.get(dbName).getExistingDocument(id);
-                        if(doc != null){
+                        if (doc != null) {
                             String jsonString = mapper.writeValueAsString(doc.getProperties());
                             callback.success(jsonString);
-                        }
-                        else callback.error("null");
+                        } else callback.error("null");
                     }
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
                 }
-                catch(final Exception e){
+            }
+        });
+    }
+
+    private void getDocRev(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    String id = args.getString(1);
+
+                    Document doc = dbs.get(dbName).getExistingDocument(id);
+                    if (doc != null) {
+                        callback.success(doc.getCurrentRevisionId());
+                    } else callback.error("null");
+
+                } catch (final Exception e) {
                     callback.error(e.getMessage());
                 }
             }
@@ -426,7 +484,7 @@ public class CBLite extends CordovaPlugin {
     private void upsert(final JSONArray args, final CallbackContext callback) {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
-                try{
+                try {
                     String dbName = args.getString(0);
                     String id = args.getString(1);
                     String jsonString = args.getString(2);
@@ -435,22 +493,22 @@ public class CBLite extends CordovaPlugin {
                     ObjectMapper mapper = new ObjectMapper();
 
                     if (isLocal) {
-                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
+                        });
                         dbs.get(dbName).putLocalDocument(id, mapDoc);
                         callback.success("local upsert successful");
-                    }
-                    else {
+                    } else {
                         Document doc = dbs.get(dbName).getExistingDocument(id);
-                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
-                        if(doc != null) doc.putProperties(mapDoc);
-                        else{
+                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
+                        });
+                        if (doc != null) doc.putProperties(mapDoc);
+                        else {
                             Document newDoc = dbs.get(dbName).getDocument(id);
                             newDoc.putProperties(mapDoc);
                         }
                         callback.success("upsert successful");
                     }
-                }
-                catch(final Exception e){
+                } catch (final Exception e) {
                     callback.error(e.getMessage());
                 }
             }

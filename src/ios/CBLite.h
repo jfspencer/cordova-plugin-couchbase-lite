@@ -19,7 +19,9 @@
 
 //READ
 - (void)allDocs:(CDVInvokedUrlCommand*)urlCommand;
+- (void)allDocsFromSequence:(CDVInvokedUrlCommand*)urlCommand;
 - (void)get:(CDVInvokedUrlCommand*)urlCommand;
+- (void)getDocRev:(CDVInvokedUrlCommand*)urlCommand;
 
 //WRITE
 - (void)putAttachment:(CDVInvokedUrlCommand*)urlCommand;

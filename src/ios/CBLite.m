@@ -198,6 +198,47 @@ static NSThread *cblThread;
     });
 }
 
+- (void)allDocsFromSequence:(CDVInvokedUrlCommand *)urlCommand {
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+    [pluginResult setKeepCallbackAsBool:YES];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+    dispatch_cbl_async(cblThread, ^{
+        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+        CBLQuery* query = [dbs[dbName] createAllDocumentsQuery];
+        NSInteger batch = 1000;
+        query.allDocsMode = kCBLAllDocs;
+        query.prefetch = YES;
+        //query.limit = limit;
+        NSError *error2;
+        CBLQueryEnumerator* result = [query run: &error2];
+        NSMutableArray *responseBuffer = [NSMutableArray array];
+        for (CBLQueryRow* row in result) {
+            NSError *error;
+            NSData *data = [NSJSONSerialization dataWithJSONObject:row.documentProperties
+                                                           options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
+                                                             error:&error];
+            NSString *json = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            [responseBuffer addObject:json];
+            if([responseBuffer count] > batch){
+                NSString *response = [[responseBuffer subarrayWithRange:NSMakeRange(0, batch)] componentsJoinedByString:@","];
+                [responseBuffer removeObjectsInRange:NSMakeRange(0, batch)];
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", response]];
+                [pluginResult setKeepCallbackAsBool:YES];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            }
+        }
+
+        NSString *finalResponse = [responseBuffer componentsJoinedByString:@","];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", finalResponse]];
+        [pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+
+        CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@""];
+        [finalPluginResult setKeepCallbackAsBool:NO];
+        [self.commandDelegate sendPluginResult:finalPluginResult callbackId:urlCommand.callbackId];
+    });
+}
+
 - (void)get:(CDVInvokedUrlCommand *)urlCommand {
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
@@ -232,6 +273,25 @@ static NSThread *cblThread;
             [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
+    });
+}
+
+- (void)getDocRev:(CDVInvokedUrlCommand *)urlCommand {
+    dispatch_cbl_async(cblThread, ^{
+        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+        NSString *id = [urlCommand.arguments objectAtIndex:1];
+
+        CBLDocument *doc = [dbs[dbName] existingDocumentWithID: id];
+        if(doc == nil){
+            CDVPluginResult* pluginResult =
+            [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"null"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
+        NSError *error2;
+        NSData *json = [NSJSONSerialization dataWithJSONObject:doc.properties options:0 error:&error2];
+        CDVPluginResult* pluginResult =
+        [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     });
 }
 

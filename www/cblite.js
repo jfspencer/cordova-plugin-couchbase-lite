@@ -6,7 +6,7 @@ var exec = require('cordova/exec');
 //////////_______UTIL_______\\\\\\\\\\
 /**
  * @param options:[dbName]
- * @returns docId:Rx
+ * @returns docId:Rx<{id:string, is_delete:boolean}>
  */
 module.exports.changesDatabase$ = function changesDatabase$(options) {
     return Rx.Observable.create(function (subscriber) {
@@ -21,7 +21,7 @@ module.exports.changesDatabase$ = function changesDatabase$(options) {
 
 /**
  * @param options:[dbName]
- * @returns docId:Rx
+ * @returns ReplicationStatus:Rx<{status:string, message:string}>
  */
 module.exports.changesReplication$ = function changesReplication$(options) {
     return Rx.Observable.create(function (subscriber) {
@@ -122,7 +122,7 @@ module.exports.sync = function sync(options) {
 //////////_______READ_______\\\\\\\\\\
 /**
  * @param options:[dbName]
- * @returns JSON:Rx
+ * @returns allDocs:Rx<[docs...]>
  */
 module.exports.allDocs$ = function allDocs$(options) {
     return Rx.Observable.create(function (subscriber) {
@@ -135,12 +135,36 @@ module.exports.allDocs$ = function allDocs$(options) {
 };
 
 /**
+ * @param options:[dbName]
+ * @returns allDocs:Rx<[docs...]>
+ */
+module.exports.allDocsFromSequence$ = function allDocsFromSequence$(options) {
+    return Rx.Observable.create(function (subscriber) {
+        exec(function (res) {
+                if (_.isEmpty(res)) subscriber.complete();
+                else subscriber.next(eval("(" + res + ")"));
+            },
+            function (err) {subscriber.error(err);}, "CBLite", "allDocsFromSequence", options);
+    });
+};
+
+/**
  * @param options:[dbName:string, docId:string, isLocal:boolean]
  * @returns JSON:Object
  */
 module.exports.get = function get(options) {
     return new Promise(function (resolve, reject) {
         exec(function (res) {resolve(eval("(" + res + ")"));}, function (err) {reject(err);}, "CBLite", "get", options);
+    });
+};
+
+/**
+ * @param options:[dbName:string, docId:string]
+ * @returns RevisionId:String
+ */
+module.exports.getDocRev = function getDocRev(options) {
+    return new Promise(function (resolve, reject) {
+        exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBLite", "getDocRev", options);
     });
 };
 
