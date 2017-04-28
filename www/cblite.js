@@ -65,6 +65,16 @@ module.exports.initDb = function initDb(options) {
 };
 
 /**
+ * @param options:[dbName]
+ * @returns sequenceNumber:number
+ */
+module.exports.lastSequence = function lastSequence(options) {
+    return new Promise(function (resolve, reject) {
+        exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBLite", "lastSequence", options);
+    });
+};
+
+/**
  * One off inbound replication
  * @param options:[dbName]
  * @returns message:string

@@ -11,6 +11,7 @@
 - (void)compact:(CDVInvokedUrlCommand*)urlCommand;
 - (void)info:(CDVInvokedUrlCommand*)urlCommand;
 - (void)initDb:(CDVInvokedUrlCommand*)urlCommand;
+- (void)lastSequence:(CDVInvokedUrlCommand*)urlCommand;
 - (void)replicateFrom:(CDVInvokedUrlCommand*)urlCommand;
 - (void)replicateTo:(CDVInvokedUrlCommand*)urlCommand;
 - (void)reset:(CDVInvokedUrlCommand*)urlCommand;

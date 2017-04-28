@@ -99,6 +99,13 @@ static NSThread *cblThread;
     });
 }
 
+- (void)lastSequence:(CDVInvokedUrlCommand *)urlCommand {
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSUInteger:[dbs[dbName] lastSequenceNumber]];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+
+}
+
 - (void)replicateFrom:(CDVInvokedUrlCommand *)urlCommand {
 
 }

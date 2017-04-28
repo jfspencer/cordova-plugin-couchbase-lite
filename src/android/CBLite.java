@@ -91,7 +91,6 @@ public class CBLite extends CordovaPlugin {
             }
         }
 
-
         //cancel replications
         if (replications != null) {
             for (Replication replication : replications.values()) {
@@ -115,6 +114,7 @@ public class CBLite extends CordovaPlugin {
         else if (action.equals("compact")) compact(args, callback);
         else if (action.equals("info")) info(args, callback);
         else if (action.equals("initDb")) initDb(args, callback);
+        else if (action.equals("lastSequence")) lastSequence(args, callback);
         else if (action.equals("replicateFrom")) replicateFrom(args, callback);
         else if (action.equals("replicateTo")) replicateTo(args, callback);
         else if (action.equals("reset")) reset(args, callback);
@@ -238,6 +238,19 @@ public class CBLite extends CordovaPlugin {
                     options.setStorageType(Manager.FORESTDB_STORAGE);
                     dbs.put(dbName, dbmgr.openDatabase(dbName, options));
                     callback.success("CBL db init success");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
+    }
+
+    private void lastSequence(final JSONArray args, final CallbackContext callback){
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    callback.success((int)dbs.get(dbName).getLastSequenceNumber());
                 } catch (final Exception e) {
                     callback.error(e.getMessage());
                 }
