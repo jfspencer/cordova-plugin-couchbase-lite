@@ -42,6 +42,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CBLite extends CordovaPlugin {
 
@@ -154,7 +155,7 @@ public class CBLite extends CordovaPlugin {
                                 long lastSequence = dbs.get(dbName).getLastSequenceNumber();
                                 for (DocumentChange change : changes) {
                                     PluginResult result = new PluginResult(PluginResult.Status.OK,
-                                            "{\"id\":" + "\"" + change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() +  ",\"seq_num\":" + lastSequence + "}");
+                                            "{\"id\":" + "\"" + change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() + ",\"seq_num\":" + lastSequence + "}");
                                     result.setKeepCallback(true);
                                     callback.sendPluginResult(result);
                                 }
@@ -245,12 +246,12 @@ public class CBLite extends CordovaPlugin {
         });
     }
 
-    private void lastSequence(final JSONArray args, final CallbackContext callback){
+    private void lastSequence(final JSONArray args, final CallbackContext callback) {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
                     String dbName = args.getString(0);
-                    callback.success((int)dbs.get(dbName).getLastSequenceNumber());
+                    callback.success((int) dbs.get(dbName).getLastSequenceNumber());
                 } catch (final Exception e) {
                     callback.error(e.getMessage());
                 }
@@ -324,16 +325,22 @@ public class CBLite extends CordovaPlugin {
         callback.sendPluginResult(firstResult);
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
-                try{
+                try {
                     final String dbName = args.getString(0);
                     final int totalDocs = dbs.get(dbName).getDocumentCount();
                     final int batch = 500;
                     final int segments = batch > totalDocs ? 1 : totalDocs / batch;
-                    ArrayList<Integer> skipList = new ArrayList<Integer>();
-                    for(int i = 1; i <= segments; i++) skipList.add(i * batch);
-                    for(Integer skipCount: skipList){
+                    final ArrayList<Integer> skipList = new ArrayList<Integer>();
+
+                    final AtomicInteger numCompleted = new AtomicInteger();
+
+                    for (int i = 0; i <= segments; i++) skipList.add(i * batch);
+
+                    ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
+
+                    for (Integer skipCount : skipList) {
                         final int innerSkip = skipCount;
-                        ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
+
                         Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
                             @Override
                             public Boolean call() throws Exception {
@@ -342,7 +349,7 @@ public class CBLite extends CordovaPlugin {
                                 query.setPrefetch(true);
                                 query.setLimit(batch);
                                 query.setSkip(innerSkip);
-                                try{
+                                try {
                                     QueryEnumerator allDocsQuery = query.run();
                                     final ArrayList<String> responseBuffer = new ArrayList<String>();
 
@@ -350,18 +357,12 @@ public class CBLite extends CordovaPlugin {
                                         QueryRow row = it.next();
                                         responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
                                     }
-                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",",responseBuffer) + "]");
+                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",", responseBuffer) + "]");
                                     result.setKeepCallback(true);
                                     callback.sendPluginResult(result);
-                                    if(totalDocs - innerSkip < batch){
-                                        PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
-                                        finalResult.setKeepCallback(false);
-                                        callback.sendPluginResult(finalResult);
-                                        runnerCount = 0;
-                                    }
-                                }
-                                catch(Exception e){
-                                    PluginResult result = new PluginResult(PluginResult.Status.ERROR,e.getMessage());
+                                    numCompleted.incrementAndGet();
+                                } catch (Exception e) {
+                                    PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
                                     result.setKeepCallback(false);
                                     callback.sendPluginResult(result);
                                     return false;
@@ -370,14 +371,26 @@ public class CBLite extends CordovaPlugin {
                             }
                         });
                         runnerCount += 1;
-                        if(runnerCount >= MAX_THREADS) {
+                        if (runnerCount >= MAX_THREADS) {
                             isComplete.get();
                             runnerCount = 0;
                         }
                     }
-                }
-                catch(Exception e){
-                    PluginResult result = new PluginResult(PluginResult.Status.ERROR,e.getMessage());
+                    executor.submit(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            while (numCompleted.get() < skipList.size()) {
+                                Thread.sleep(1000);
+                            }
+                            PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
+                            finalResult.setKeepCallback(false);
+                            callback.sendPluginResult(finalResult);
+                            runnerCount = 0;
+                            return true;
+                        }
+                    });
+                } catch (Exception e) {
+                    PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
                     result.setKeepCallback(false);
                     callback.sendPluginResult(result);
                 }
