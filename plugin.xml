@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-couchbase-lite" version="0.3.0">
+        id="cordova-plugin-couchbase-lite" version="1.0.0">
   <name>Cordova Couchbase Lite + APIs</name>
   <description>Provides Typescript and ScalaJS APIs over the provided REST API.</description>
   <license>Apache 2.0</license>
@@ -8,7 +8,7 @@
     <clobbers target="cbl"/>
   </js-module>
   <engines>
-    <engine name="cordova" version=">=4.0.0"/>
+    <engine name="cordova" version=">=6.0.0"/>
   </engines>
   <platform name="ios">
     <config-file target="config.xml" parent="/widget">
