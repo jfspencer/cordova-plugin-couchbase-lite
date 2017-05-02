@@ -1,41 +1,59 @@
 package com.couchbase.cblite.phonegap;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 
+import com.couchbase.lite.DatabaseOptions;
 import com.couchbase.lite.Document;
+import com.couchbase.lite.DocumentChange;
+import com.couchbase.lite.Query;
+import com.couchbase.lite.QueryEnumerator;
+import com.couchbase.lite.QueryRow;
 import com.couchbase.lite.UnsavedRevision;
 import com.couchbase.lite.android.AndroidContext;
 import com.couchbase.lite.Database;
 import com.couchbase.lite.Manager;
 import com.couchbase.lite.auth.Authenticator;
 import com.couchbase.lite.auth.AuthenticatorFactory;
-import com.couchbase.lite.listener.LiteListener;
-import com.couchbase.lite.listener.Credentials;
 import com.couchbase.lite.replicator.Replication;
-import com.couchbase.lite.router.URLStreamHandlerFactory;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
 import com.couchbase.lite.javascript.JavaScriptViewCompiler;
+import com.couchbase.lite.util.Log;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CBLite extends CordovaPlugin {
 
-    private static final int DEFAULT_LISTEN_PORT = 5984;
-    private boolean initFailed = false;
-    private int listenPort;
-    private Credentials allowedCredentials;
     private static Manager dbmgr = null;
-    private static HashMap<String, com.couchbase.lite.Database> activeDbs = null;
+    private static HashMap<String, Database> dbs = null;
+    private static HashMap<String, Replication> replications = null;
+    private static HashMap<String, Database.ChangeListener> changeListeners = null;
+    private static HashMap<String, Replication.ChangeListener> replicationListeners = null;
+    private static int runnerCount = 0;
+    final static int MAX_THREADS = 3;
+    private static ObjectMapper mapper = new ObjectMapper();
 
     public CBLite() {
         super();
@@ -47,91 +65,198 @@ public class CBLite extends CordovaPlugin {
         System.out.println("initialize() called");
         super.initialize(cordova, webView);
         try {
-            allowedCredentials = new Credentials();
-            URLStreamHandlerFactory.registerSelfIgnoreError();
             View.setCompiler(new JavaScriptViewCompiler());
             Database.setFilterCompiler(new JavaScriptReplicationFilterCompiler());
             dbmgr = startCBLite(this.cordova.getActivity());
-            listenPort = startCBLListener(DEFAULT_LISTEN_PORT, dbmgr, allowedCredentials);
         } catch (final Exception e) {
             e.printStackTrace();
-            initFailed = true;
         }
     }
 
     @Override
-    public void onReset(){
+    public void onReset() {
         //cancel change listeners
-        if(activeDbs != null) activeDbs.clear();
+        if (changeListeners != null) {
+            for (String dbName : changeListeners.keySet()) {
+                for (Database.ChangeListener listener : changeListeners.values()) {
+                    dbs.get(dbName).removeChangeListener(listener);
+                }
+            }
+        }
+
+        if (replicationListeners != null) {
+            for (String dbName : replicationListeners.keySet()) {
+                for (Replication.ChangeListener listener : replicationListeners.values()) {
+                    replications.get(dbName).removeChangeListener(listener);
+                }
+            }
+        }
+
+        //cancel replications
+        if (replications != null) {
+            for (Replication replication : replications.values()) {
+                replication.stop();
+            }
+        }
+
+        if (dbs != null) dbs.clear();
+        if (changeListeners != null) changeListeners.clear();
+        if (replicationListeners != null) replicationListeners.clear();
+        if (replications != null) replications.clear();
+        runnerCount = 0;
     }
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callback) {
-        //Old API
-        if (action.equals("stopReplication")) stopReplication(args, callback);
-        else if (action.equals("isReplicating")) isReplicating(args, callback);
-        else if (action.equals("getURL")) getURUL(args, callback);
-        else if (action.equals("putAttachment")) putAttachment(args, callback);
-        else if (action.equals("dbSync")) dbSync(args, callback);
 
-        //Complete API
-        else if (action.equals("activeTasks")) activeTasks(args, callback);
-        else if (action.equals("changes")) changes(args, callback);
+        //UTIL
+        if (action.equals("changesDatabase")) changesDatabase(args, callback);
+        else if (action.equals("changesReplication")) changesReplication(args, callback);
         else if (action.equals("compact")) compact(args, callback);
-        else if (action.equals("destroy")) destroy(args, callback);
         else if (action.equals("info")) info(args, callback);
         else if (action.equals("initDb")) initDb(args, callback);
+        else if (action.equals("lastSequence")) lastSequence(args, callback);
         else if (action.equals("replicateFrom")) replicateFrom(args, callback);
         else if (action.equals("replicateTo")) replicateTo(args, callback);
         else if (action.equals("reset")) reset(args, callback);
-        else if (action.equals("revsDiff")) revsDiff(args, callback);
+        else if (action.equals("stopReplication")) stopReplication(args, callback);
         else if (action.equals("sync")) sync(args, callback);
-        else if (action.equals("viewCleanup")) viewCleanup(args, callback);
+
+            //READ
         else if (action.equals("allDocs")) allDocs(args, callback);
         else if (action.equals("get")) get(args, callback);
-        else if (action.equals("getAttachment")) getAttachment(args, callback);
-        else if (action.equals("query")) query(args, callback);
-        else if (action.equals("bulkDocs")) bulkDocs(args, callback);
-        else if (action.equals("post")) post(args, callback);
-        else if (action.equals("put")) put(args, callback);
-        else if (action.equals("remove")) remove(args, callback);
-        else if (action.equals("removeAttachment")) removeAttachment(args, callback);
+        else if (action.equals("getDocRev")) getDocRev(args, callback);
+
+            //WRITE
+        else if (action.equals("putAttachment")) putAttachment(args, callback);
         else if (action.equals("upsert")) upsert(args, callback);
+
         return true;
     }
 
-    private void activeTasks(JSONArray args, CallbackContext callback) {
+    private void changesDatabase(final JSONArray args, final CallbackContext callback) {
+        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+        result.setKeepCallback(true);
+        callback.sendPluginResult(result);
+
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    final String dbName = args.getString(0);
+
+                    if (changeListeners == null) {
+                        changeListeners = new HashMap<String, Database.ChangeListener>();
+                    }
+                    if (dbs.get(dbName) != null) {
+                        changeListeners.put(dbName, new Database.ChangeListener() {
+                            @Override
+                            public void changed(Database.ChangeEvent event) {
+                                List<DocumentChange> changes = event.getChanges();
+                                long lastSequence = dbs.get(dbName).getLastSequenceNumber();
+                                for (DocumentChange change : changes) {
+                                    PluginResult result = new PluginResult(PluginResult.Status.OK,
+                                            "{\"id\":" + "\"" + change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() + ",\"seq_num\":" + lastSequence + "}");
+                                    result.setKeepCallback(true);
+                                    callback.sendPluginResult(result);
+                                }
+                            }
+                        });
+
+                        dbs.get(dbName).addChangeListener(changeListeners.get(dbName));
+                    }
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void changes(JSONArray args, CallbackContext callback) {
+    private void changesReplication(final JSONArray args, final CallbackContext callback) {
+        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+        result.setKeepCallback(true);
+        callback.sendPluginResult(result);
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    if (replicationListeners == null) {
+                        replicationListeners = new HashMap<String, Replication.ChangeListener>();
+                    }
+                    if (dbs.get(dbName) != null) {
+                        replicationListeners.put(dbName, new Replication.ChangeListener() {
+                            public void changed(Replication.ChangeEvent event) {
+                                Replication.ReplicationStatus status = event.getStatus();
+                                PluginResult result = new PluginResult(PluginResult.Status.OK, status.toString());
+                                result.setKeepCallback(true);
+                                callback.sendPluginResult(result);
+                            }
+                        });
+                        replications.get(dbName).addChangeListener(replicationListeners.get(dbName));
+                    }
+
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void compact(JSONArray args, CallbackContext callback) {
-        try {
-            Database db = getDB(args.getString(0), callback);
-            db.compact();
-            callback.success("attachment saved!");
-        } catch (final Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
+    private void compact(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    dbs.get(dbName).compact();
+                    callback.success("attachment saved!");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void destroy(JSONArray args, CallbackContext callback) {
+    private void info(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    callback.success(dbs.get(dbName).getDocumentCount());
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void info(JSONArray args, CallbackContext callback) {
+    private void initDb(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    if (dbs == null) dbs = new HashMap<String, Database>();
+                    DatabaseOptions options = new DatabaseOptions();
+                    options.setCreate(true);
+                    options.setStorageType(Manager.FORESTDB_STORAGE);
+                    dbs.put(dbName, dbmgr.openDatabase(dbName, options));
+                    callback.success("CBL db init success");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void initDb(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            activeDbs.put(dbName, dbmgr.getDatabase(dbName));
-            callback.success("success");
-        } catch (final Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
+    private void lastSequence(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    callback.success((int) dbs.get(dbName).getLastSequenceNumber());
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
     private void replicateFrom(JSONArray args, CallbackContext callback) {
@@ -144,144 +269,237 @@ public class CBLite extends CordovaPlugin {
         this.onReset();
     }
 
-    private void revsDiff(JSONArray args, CallbackContext callback) {
+    private void stopReplication(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    Database db = dbs.get(dbName);
+                    if (db != null) {
+                        for (Replication replication : db.getAllReplications()) replication.stop();
+                        callback.success("true");
+                    } else callback.error("false");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void sync(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            URL syncUrl = new URL(args.getString(1));
-            String user = args.getString(2);
-            String pass = args.getString(3);
+    private void sync(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    URL syncUrl = new URL(args.getString(1));
+                    String user = args.getString(2);
+                    String pass = args.getString(3);
 
-            Replication push = activeDbs.get(dbName).createPushReplication(syncUrl);
-            Replication pull = activeDbs.get(dbName).createPullReplication(syncUrl);
-            Authenticator auth = AuthenticatorFactory.createBasicAuthenticator(user, pass);
-            push.setAuthenticator(auth);
-            pull.setAuthenticator(auth);
-            push.start();
-            pull.start();
-            callback.success("true");
-        } catch (Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
+                    if (replications == null) replications = new HashMap<String, Replication>();
+
+                    Replication push = dbs.get(dbName).createPushReplication(syncUrl);
+                    Replication pull = dbs.get(dbName).createPullReplication(syncUrl);
+                    Authenticator auth = AuthenticatorFactory.createBasicAuthenticator(user, pass);
+                    push.setAuthenticator(auth);
+                    pull.setAuthenticator(auth);
+                    push.setContinuous(true);
+                    pull.setContinuous(true);
+                    push.start();
+                    pull.start();
+
+                    replications.put(dbName + "_push", push);
+                    replications.put(dbName + "_pull", pull);
+
+                    callback.success("true");
+                } catch (Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void viewCleanup(JSONArray args, CallbackContext callback) {
+
+    private void allDocs(final JSONArray args, final CallbackContext callback) {
+        PluginResult firstResult = new PluginResult(PluginResult.Status.NO_RESULT);
+        firstResult.setKeepCallback(true);
+        callback.sendPluginResult(firstResult);
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    final String dbName = args.getString(0);
+                    final int totalDocs = dbs.get(dbName).getDocumentCount();
+                    final int batch = 500;
+                    final int segments = batch > totalDocs ? 1 : totalDocs / batch;
+                    final ArrayList<Integer> skipList = new ArrayList<Integer>();
+
+                    final AtomicInteger numCompleted = new AtomicInteger();
+
+                    for (int i = 0; i <= segments; i++) skipList.add(i * batch);
+
+                    ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
+
+                    for (Integer skipCount : skipList) {
+                        final int innerSkip = skipCount;
+
+                        Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
+                            @Override
+                            public Boolean call() throws Exception {
+                                Query query = dbs.get(dbName).createAllDocumentsQuery();
+                                query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
+                                query.setPrefetch(true);
+                                query.setLimit(batch);
+                                query.setSkip(innerSkip);
+                                try {
+                                    QueryEnumerator allDocsQuery = query.run();
+                                    final ArrayList<String> responseBuffer = new ArrayList<String>();
+
+                                    for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
+                                        QueryRow row = it.next();
+                                        responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
+                                    }
+                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",", responseBuffer) + "]");
+                                    result.setKeepCallback(true);
+                                    callback.sendPluginResult(result);
+                                    numCompleted.incrementAndGet();
+                                } catch (Exception e) {
+                                    PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+                                    result.setKeepCallback(false);
+                                    callback.sendPluginResult(result);
+                                    return false;
+                                }
+                                return true;
+                            }
+                        });
+                        runnerCount += 1;
+                        if (runnerCount >= MAX_THREADS) {
+                            isComplete.get();
+                            runnerCount = 0;
+                        }
+                    }
+                    executor.submit(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            while (numCompleted.get() < skipList.size()) {
+                                Thread.sleep(1000);
+                            }
+                            PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
+                            finalResult.setKeepCallback(false);
+                            callback.sendPluginResult(finalResult);
+                            runnerCount = 0;
+                            return true;
+                        }
+                    });
+                } catch (Exception e) {
+                    PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+                    result.setKeepCallback(false);
+                    callback.sendPluginResult(result);
+                }
+            }
+        });
     }
 
-    private void allDocs(JSONArray args, CallbackContext callback) {
+    private void get(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    String id = args.getString(1);
+                    Boolean isLocal = args.getBoolean(2);
+
+                    if (isLocal) {
+                        Map<String, Object> localDoc = dbs.get(dbName).getExistingLocalDocument(id);
+                        if (localDoc != null) {
+                            callback.success(mapper.writeValueAsString(localDoc));
+                        } else callback.error("null");
+                    } else {
+                        Document doc = dbs.get(dbName).getExistingDocument(id);
+                        if (doc != null) {
+                            String jsonString = mapper.writeValueAsString(doc.getProperties());
+                            callback.success(jsonString);
+                        } else callback.error("null");
+                    }
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void get(JSONArray args, CallbackContext callback) {
+    private void getDocRev(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    String id = args.getString(1);
+
+                    Document doc = dbs.get(dbName).getExistingDocument(id);
+                    if (doc != null) {
+                        callback.success(doc.getCurrentRevisionId());
+                    } else callback.error("null");
+
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void getAttachment(JSONArray args, CallbackContext callback) {
+    private void putAttachment(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    String filePath = cordova.getActivity().getApplicationContext().getFilesDir() + "/" + args.getString(5) + "/" + args.getString(2);
+                    FileInputStream stream = new FileInputStream(filePath);
+                    Document doc = dbs.get(dbName).getDocument(args.getString(1));
+                    UnsavedRevision newRev = doc.getCurrentRevision().createRevision();
+                    newRev.setAttachment(args.getString(3), args.getString(4), stream);
+                    newRev.save();
+                    callback.success("attachment saved!");
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void query(JSONArray args, CallbackContext callback) {
+    private void upsert(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    String id = args.getString(1);
+                    String jsonString = args.getString(2);
+                    Boolean isLocal = args.getBoolean(3);
+
+                    ObjectMapper mapper = new ObjectMapper();
+
+                    if (isLocal) {
+                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
+                        });
+                        dbs.get(dbName).putLocalDocument(id, mapDoc);
+                        callback.success("local upsert successful");
+                    } else {
+                        Document doc = dbs.get(dbName).getExistingDocument(id);
+                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
+                        });
+                        if (doc != null) doc.putProperties(mapDoc);
+                        else {
+                            Document newDoc = dbs.get(dbName).getDocument(id);
+                            newDoc.putProperties(mapDoc);
+                        }
+                        callback.success("upsert successful");
+                    }
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
     }
 
-    private void bulkDocs(JSONArray args, CallbackContext callback) {
-    }
-
-    private void post(JSONArray args, CallbackContext callback) {
-    }
-
-    private void put(JSONArray args, CallbackContext callback) {
-    }
-
-    private void putAttachment(JSONArray args, CallbackContext callback) {
-        try {
-        	
-            String filePath = this.cordova.getActivity().getApplicationContext().getFilesDir() + "/"+ args.getString(5) +"/" + args.getString(2);
-            FileInputStream stream = new FileInputStream(filePath);
-            Database db = getDB(args.getString(0), callback);
-            Document doc = db.getDocument(args.getString(1));
-            UnsavedRevision newRev = doc.getCurrentRevision().createRevision();
-            newRev.setAttachment(args.getString(3), args.getString(4), stream);
-            newRev.save();
-            callback.success("attachment saved!");
-        } catch (final Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
-    }
-
-    private void remove(JSONArray args, CallbackContext callback) {
-    }
-
-    private void removeAttachment(JSONArray args, CallbackContext callback) {
-    }
-
-    private void upsert(JSONArray args, CallbackContext callback) {
-    }
-
-    private void dbSync(JSONArray args, CallbackContext callback) {
-        try {
-            String dbName = args.getString(0);
-            URL syncUrl = new URL(args.getString(1));
-            String user = args.getString(2);
-            String pass = args.getString(3);
-            Database db = getDB(dbName, callback);
-
-            Replication push = db.createPushReplication(syncUrl);
-            Replication pull = db.createPullReplication(syncUrl);
-            Authenticator auth = AuthenticatorFactory.createBasicAuthenticator(user, pass);
-            push.setAuthenticator(auth);
-            pull.setAuthenticator(auth);
-            push.start();
-            pull.start();
-            callback.success("true");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
-    }
-
-    private void getURUL(JSONArray args, CallbackContext callback) {
-        try {
-            if (initFailed)
-                callback.error("Failed to initialize couchbase lite.  See console logs");
-            else
-                callback.success(String.format("http://%s:%s@localhost:%d/", allowedCredentials.getLogin(), allowedCredentials.getPassword(), listenPort));
-        } catch (final Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
-    }
-
-    private void isReplicating(JSONArray args, CallbackContext callback) {
-        try {
-            Database db = getDB(args.getString(0), callback);
-            if (db != null) {
-                if (db.getActiveReplications().size() > 0) callback.success("true");
-                else callback.success("false");
-            } else callback.error("could not check replication, database does not exist");
-        } catch (final Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
-    }
-
-    private void stopReplication(JSONArray args, CallbackContext callback) {
-        try {
-            Database db = getDB(args.getString(0), callback);
-            if (db != null) {
-                for (Replication replication : db.getAllReplications()) replication.stop();
-                callback.success("true");
-            } else callback.error("false");
-        } catch (final Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
-    }
-
+    //PLUGIN BOILER PLATE
 
     private Manager startCBLite(Context context) {
-        Manager manager;
         try {
 //            Manager.enableLogging(Log.TAG, Log.VERBOSE);
 //            Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
@@ -294,32 +512,11 @@ public class CBLite extends CordovaPlugin {
 //            Manager.enableLogging(Log.TAG_MULTI_STREAM_WRITER, Log.VERBOSE);
 //            Manager.enableLogging(Log.TAG_REMOTE_REQUEST, Log.VERBOSE);
 //            Manager.enableLogging(Log.TAG_ROUTER, Log.VERBOSE);
-            manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
+            dbmgr = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return manager;
-    }
-
-    //DEPRECATED
-    private Database getDB(String dbName, CallbackContext callback) {
-        try {
-            Database db = dbmgr.getExistingDatabase(dbName);
-            if (db == null) return null;
-            else return db;
-        } catch (final Exception e) {
-            e.printStackTrace();
-            callback.error(e.getMessage());
-        }
-        return null;
-    }
-
-    private int startCBLListener(int listenPort, Manager manager, Credentials allowedCredentials) {
-        LiteListener listener = new LiteListener(manager, listenPort, allowedCredentials);
-        int boundPort = listener.getListenPort();
-        Thread thread = new Thread(listener);
-        thread.start();
-        return boundPort;
+        return dbmgr;
     }
 
     @Override

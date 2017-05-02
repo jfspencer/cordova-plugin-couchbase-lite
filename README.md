@@ -1,18 +1,17 @@
 # Cordova-Plugin-Couchbase-Lite
-Couchbase Lite Cordova plugin that provides a full typescript and scalajs interfaces over
- CBL's REST API. This repo is intentionally not forked from the main
+Couchbase Lite Cordova plugin that provides a standard cordova interface instead of relying on the 
+ built in REST Server or another HTTP API layer. The native implementations run on their own
+ background thread(iOS)/threads(android) so operations will never block the UI.
+ This repo is intentionally not forked from the main
 [couchbase-lite-phonegap](https://github.com/couchbaselabs/Couchbase-Lite-PhoneGap-Plugin)
-repo. A seperate issue tracker is needed to track issues and progress with the typescript and
-scalajs interface code. This repo does not intend to provide improvements ahead of the main
+repo. A seperate issue tracker is needed to track issues and progress with the cordova interface
+ code. This repo does not intend to provide improvements ahead of the main
  repository for the native code. This code will be manually updated as it is
  released from couchbase.
 
-API follows [PouchDB](http://pouchdb.com/api.html)'s API as strictly as possible,
- with the exceptions listed under [Differences Compared to PouchAPI](#quirks).
- If you have a suggestion on how to remove any exception(s) please submit a pull request.
 
 This project depends on
-[URI.js](https://medialize.github.io/URI.js/), [lodash](https://lodash.com/docs) and an
+[RxJS 5.x](https://medialize.github.io/URI.js/), [lodash](https://lodash.com/docs) and an
 [A+ compliant Promise library](https://github.com/promises-aplus/promises-spec/blob/master/implementations.md)
   to be globally available in the implementing project.
 
@@ -21,27 +20,10 @@ This project depends on
 bit code and slicing. The CBL iOS libraries do not support them yet. Also has commented config
 options for supporting swift in cordova ios projects.
 
-## TypeScript Installation
-- here is a reference implementation of typescript cordova/ionic and cbl [TypeApp](https://github.com/happieio/typeapp)
-
-- First add the plugin to your project by
-
-    cordova add plugin https://github.com/happieio/cordova-plugin-couchbase-lite.git
-
-- Second move the following API files into the appropriate place in your project.
-  - APIs -> typescript -> cbl.ts & cblemitter.ts
-  - APIs -> typescript -> typedefs -> cbl.d.ts & cblemitter.d.ts & cblsubtypes.d.ts & eventsource.d.ts
-
-- Third Fix the /// reference paths to be relative to your project and link to or copy the
-bluebird, jquery, lodash and urijs definition files.
-
-- Fourth import the cbl.ts file into your data access class and have fun :)
-
-## ScalaJS Installation - API NOT WRITTEN YET
+## Standard Installation
 First add the plugin to your project by
 
     cordova add plugin https://github.com/happieio/cordova-plugin-couchbase-lite.git
-
 
 ## Contributing
 Your Help in writing unit tests for Travis are very welcome and reporting or generating
@@ -49,167 +31,157 @@ a pull request for bug fixes or improvements are always welcome too!
 
 
 ## Brief API Overview
-note: The typescript API is formatted for use with external module systems(AMD, CommonJS etc.).
+### initDb()
+Params: [dbId:string]
 
-Create a New CBL API Instance. Can optionally provide a sync url for simplified user of the replicate
-functions.
+Returns: Promise -> string
 
-    new CBL(dbName, syncUrl?:string)
+The native code maintains an array of active database instances to interact with. to create/add
+and active db instance. databases are created using forestDB. 
 
-initDB: Initialize the instance. Creates a new DB or obtains the db url for
-an existing DB. Can optionally provide a syncUrl for convenience with
- the replicate functions. This currently requres the user:pass@url syntax.
- have not implemented cookie authentication.
+    cbl.initDb(['dbId']).then((success:string)=> ... do stuff);
 
-    initDB(syncUrl?):Promise
+### info
+Params: [dbId:string]
 
-allDocs: Fetch multiple docs from the primary _id index. See
-[Pouch allDocs](http://pouchdb.com/api.html#batch_fetch), no API differences
+Returns: Promise -> number
 
-    allDocs(params:Object):Promise
+gets the doc count of a local database
+    
+    cbl.info(['dbId']).then((count:number)=> ... do stuff)
+    
+### sync
+Params: [dbId:string, syncUrl:string, user:string, pass:string]
 
-bulkDocs: Create multiple docs at once. See
-[Pouch bulkDocs](http://pouchdb.com/api.html#batch_create), no API differences
+Returns: Promise -> boolean
 
-    bulkDocs(docs:Array<Objects>):Promise
+starts continuous push and pull replication against a database.
+    
+    cbl.sync(['dbId','url','user','pass']).then((isStarted:boolean)=> ... do stuff)
+    
+### compact
+Params: [dbId:string]
 
-changes: Subscribe to database change events. See
-[Pouch changes](http://pouchdb.com/api.html#changes),
-DIFFERENCES: only EventSource changes are supported. Only style is supported under advanced options.
-only returns a promise in order to support the since:'now' feature. the live option is obsolete
-using EventSource, and is omitted.
+Returns: Promise -> string
 
-    changes(params:Objects):Promise<Emitter>
+runs database compaction
+    
+    cbl.compact(['dbId']).then((success:string)=> ... do stuff)
+    
+### changesDatabase
+Params: [dbId:string]
 
-compact: Reduce db file size by removing outdated leaf revisions. This function creates an
-optimized duplicate database. Therefore up to twice the current storage space of the
- specified database is required for the compaction routine to complete.
-[Pouch compact](http://pouchdb.com/api.html#compaction), no API differences
+Returns: Observable -> {docId:string, is_delete:bool, seq_num:number}
 
-    compact():Promise
+starts a never ending (until reset is called) stream of database changes
+    
+    const change_sub = cbl.changesDatabase(['dbId']).subscribe((change)=> ...do stuff)
+        ... later, when done
+        change_sub.unsubscribe()
+    
+### changesReplication
+Params: [dbId:string]
 
-destroy: deletes the database. See
-[Pouch destroy](http://pouchdb.com/api.html#delete_database), no API differences
+Returns: Observable -> 'string status'
 
-    destroy():Promise
+starts a never ending (until reset is called) stream of replication changes
+    
+    const change_sub = cbl.changesReplication(['dbId']).subscribe((change)=> ...do stuff)
+    ... later, when done
+    change_sub.unsubscribe()
+    
+### lastSequence
+Params: [dbId:string]
 
-get: Get a single doc from the db. See
-[Pouch get](http://pouchdb.com/api.html#fetch_document), no API differences
+Returns: Promise -> number
 
-    get(docId:string, params?:Object):Promise
+gets the current sequence number of the given database
+    
+    cbl.lastSequence(['dbId']).then((seq:number)=> ... do stuff)
+    
+### replicateFrom
+Params: [dbId:string, syncUrl:string, user:string, pass:string]
 
-getAttachment: Get an attachment associated with a doc. See
-[Pouch getAttachment](http://pouchdb.com/api.html#bget_attachment), no API differences
+Returns: Promise -> boolean
 
-    getAttachment(docId:string, attachmentName:string, params?:Object):Promise
+:NOT IMPLEMENTED YET: starts a one shot replication receiving data from another database. 
+resolves when replication is complete.
+    
+    cbl.replicateFrom(['dbId']).then((finished:boolean)=> ... do stuff)
+    
+### replicateTo
+Params: [dbId:string, syncUrl:string, user:string, pass:string]
 
-info: Get basic info about the db including, name, # of docs and current seq id. See
-[Pouch info](http://pouchdb.com/api.html#database_information), no API differences
+Returns: Promise -> boolean
 
-    info():Promise
+:NOT IMPLEMENTED YET: starts a one shot replication sending data to another database. 
+resolves when replication is complete.
+    
+    cbl.replicateTo(['dbId']).then((finished:boolean)=> ... do stuff)
+    
+### reset
+Params: []
 
-post: Creates a doc in the DB. The DB will create the id for you if _id is not specified.
-Use PUT if you are updating a doc.
- See [Pouch post](http://pouchdb.com/api.html#using-dbpost), no API differences
+Returns: Promise -> boolean
 
-    post(docs:Object, params?:Object):Promise
+removes all the database instances from the native array, cancels all change listeners 
+on databases and replications.
+    
+    cbl.reset(['dbId']).then((finished:boolean)=> ... do stuff)
+    
+### stopReplication
+Params: []
 
-put: Create or update a doc in the DB. Must have user generated _id. See
-[Pouch put](http://pouchdb.com/api.html#create_document), DIFFERENCES: docId and revId
-are always inferred from the input doc, if rev is provided in the params, it takes
-precedence over the doc._rev;
+Returns: Promise -> boolean
 
-    put(doc:Object, params?:Object):Promise
+stops all replications 
+    
+    cbl.stopReplication(['dbId']).then((stopped:boolean)=> ... do stuff)
+    
+### allDocs
+Params: [dbId:string]
 
-putAttachment: add an attachment. See
-[Pouch putAttachment](http://pouchdb.com/api.html#save_attachment), DIFFERENCE: rev is
-the last param in the signature.
+Returns: Observable -> [docs...]
 
-    putAttachment(docId:string, attachmentId:string, attachment:any, mimeType:string, rev?:string):Promise
+returns all documents in the database in array batches. batch sizes have been optimized 
+for each platform. this observable calls complete when finished.
+    
+    cbl.allDocs(['dbId']).subscribe((docBatch:[docs...])=> ...do stuff)
+    
+### get
+Params: [dbId:string, docId:string]
 
-query: perform a view lookup based on the index of a design document. See
-[Pouch query](http://pouchdb.com/api.html#query_database). view should not contains
-'_design' it is hard coded into the function . A design doc with id '_design/myview' with
-a view function name byname should pass 'myview/byname' to the view param.
+Returns: Promise -> Doc
 
-    query(view:string, params:Object):Promise
+get a document from the database
+    
+    cbl.get(['dbId','docId']).then((doc:any)=> ...do stuff)
+    
+### getDocRev
+Params: [dbId:string, docId:string]
 
-replicateTo: Start replication to another DB from a cbl DB. See
-[Pouch replicate.to](http://pouchdb.com/api.html#example-usage-9),
-DIFFERENCES: only accepts string names/URLs. This is a single function call no sub object "to".
-Only single shot replication is supported at the moment. Pull requests welcome.
+Returns: Promise -> string
 
-    replicateTo(remoteDbUrl:string, params:Object):Promise
+gets the current revision of a document
+    
+    cbl.getDocRev(['dbId','dicId']).then((revId:string)=> ... do stuff)
+    
+### putAttachment
+Params: [dbId:string, docId:string, fileName:string, attachmentName:string, mimeType:string, dirPath:string ]
 
-replicateFrom: Start replication from another DB to a cbl DB. See
-[Pouch replicate.from](http://pouchdb.com/api.html#example-usage-9),
-DIFFERENCES: only accepts string names/URLs. This is a single function call no sub object "from".
- Only single shot replication is supported at the moment. Pull requests welcome.
+Returns: Promise -> number
 
-    replicateFrom(remoteDbUrl:string, params:Object):Promise
+adds an attachment to a document. the directory path of the file is relative to the 
+files folder on android or the root of the app sandbox on ios.
+    
+    cbl.putAttachment(['dbId','docId','file', 'attachName','mime', 'dirPath']).then(... done)
+    
+### upsert
+Params: [dbId:string, docId:string, jsonString:string, isLocal:boolean]
 
-remove: delete a document. See
-[Pouch remove](http://pouchdb.com/api.html#delete_document), no API differences
+Returns: Promise -> string
 
-    remove(doc:Object, params?:Object):Promise
-
-removeAttachment: Remove an attachment from a specified doc. See
-[Pouch removeAttachment](http://pouchdb.com/api.html#delete_attachment),
- no API differences
-
-    removeAttachment(docId:string, attachmentId:string, rev:string):Promise
-
-revDiffs: NOT IMPLEMENTED YET : Provided a list of rev ids for a given doc, 
-returns a subset of rev ids not stored in the db for that doc. See
-[Pouch revDiffs](http://pouchdb.com/api.html#revisions_diff)
-
-    revsDiff(doc:Object):Promise
-
-upsert: Automatically updates or inserts the provided doc.
-WARNING: Will blindly overwrite data if an older revision id is passed in.This
-is a convenience function. It is similar to
-[Nolan Lawson's Upsert](https://github.com/pouchdb/upsert) But not as robust.
-
-    upsert(doc:Object, params?:Object):Promise
-
-viewCleanup: NOT IMPLEMENTED YET Removes indexes that do not have a companion design doc and updates stale view
-indexes. See[Pouch bulkDocs](http://pouchdb.com/api.html#view_cleanup),
-
-
-    viewCleanup():Promise
-
-
-## <a name="quirks"></a>Summary of Differences Compared to Pouch API
-- When creating a new db, all illegal characters( /[^a-z0-9$_()+-/]/g )
-in the dbName are automatically removed upon cbl instance construction.
-This prevents dealing with illegal db name errors.
-
-- The only valid option for creating a new CBL instance is the name
-option. Auto_compaction is not included because ForestDB will inherently
-auto_compact. This Forest db will become the default engine in the near
-future.
-
-- the CBL instance needs to be initialized after creation.
-call initDB() on the new instance. This retrieves the server url and
-creates the dbUrl used by the API functions. It also attempts to create
-a database with the name provided by the constructor. Will only
-generate an error if the response status is not 201 or 412.
-
-- The dbName can only be string name, not a url to a remote couchDB. CBL
-only provides interfaces for replicating to and from an internal database.
-Use replicationTo or replicationFrom to link a local db to a remote one.
-
-- The API only returns promises. Callbacks are not supported.
-
-- The remove function only supports remove(doc:Object, params). A rev
-defined in the params takes precedence over the doc._rev.
-
-- The replicate and sync functions are not provided because there is not a
- static object for CBL to work from. If you want to work from a remote db
- pass in the authenticated CouchDB url as a parameter to initDB.
- Otherwise use replicateTo or replicateFrom on a CBL instance instead.
-
-- An Upsert Function is provided. It automatically updates or inserts the
-provided doc. If the document exists, the latest revision is applied to
- the input doc to force a successful update with the provided doc.
- WARNING: Will blindly overwrite data.
+create or update a document. always makes itself the winning revision.
+    
+    cbl.upsert(['dbId', docId, '{\"test\":123}', false]).then(... done)
+    

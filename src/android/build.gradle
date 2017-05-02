@@ -1,19 +1,20 @@
-repositories{    
-  jcenter()
-  flatDir {
-      dirs 'libs'
-   }
+repositories {
+    jcenter()
+    flatDir {
+        dirs 'libs'
+    }
 }
 
 dependencies {
-   compile(name:'couchbase-lite-android-1.4.0', ext:'aar')
-   compile(name:'couchbase-lite-android-sqlite-custom-1.4.0', ext:'aar')
+    compile(name: 'couchbase-lite-android-1.4.0', ext: 'aar')
+    compile(name: 'couchbase-lite-android-sqlite-custom-1.4.0', ext: 'aar')
+    compile(name: 'couchbase-lite-android-forestdb-1.4.0', ext: 'aar')
 }
 
 android {
-  packagingOptions {
-    exclude 'META-INF/ASL2.0'
-    exclude 'META-INF/NOTICE'
-    exclude 'META-INF/LICENSE'
-  }
+    packagingOptions {
+        exclude 'META-INF/ASL2.0'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+    }
 }
