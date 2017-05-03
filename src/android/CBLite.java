@@ -87,7 +87,15 @@ public class CBLite extends CordovaPlugin {
         if (replicationListeners != null) {
             for (String dbName : replicationListeners.keySet()) {
                 for (Replication.ChangeListener listener : replicationListeners.values()) {
-                    replications.get(dbName).removeChangeListener(listener);
+                    try {
+                        replications.get(dbName + "_push").removeChangeListener(listener);
+                    } catch (Exception e) {
+                    }
+                    try {
+                        replications.get(dbName + "_pull").removeChangeListener(listener);
+                    } catch (Exception e) {
+                    }
+
                 }
             }
         }
@@ -183,17 +191,27 @@ public class CBLite extends CordovaPlugin {
                         replicationListeners = new HashMap<String, Replication.ChangeListener>();
                     }
                     if (dbs.get(dbName) != null) {
-                        replicationListeners.put(dbName, new Replication.ChangeListener() {
+                        replicationListeners.put(dbName + "_push", new Replication.ChangeListener() {
+                            @Override
                             public void changed(Replication.ChangeEvent event) {
                                 Replication.ReplicationStatus status = event.getStatus();
-                                PluginResult result = new PluginResult(PluginResult.Status.OK, status.toString());
+                                PluginResult result = new PluginResult(PluginResult.Status.OK, "push replication: " + status.toString());
                                 result.setKeepCallback(true);
                                 callback.sendPluginResult(result);
                             }
                         });
-                        replications.get(dbName).addChangeListener(replicationListeners.get(dbName));
+                        replicationListeners.put(dbName + "_pull", new Replication.ChangeListener() {
+                            @Override
+                            public void changed(Replication.ChangeEvent event) {
+                                Replication.ReplicationStatus status = event.getStatus();
+                                PluginResult result = new PluginResult(PluginResult.Status.OK, "pull replication: " + status.toString());
+                                result.setKeepCallback(true);
+                                callback.sendPluginResult(result);
+                            }
+                        });
+                        replications.get(dbName + "_push").addChangeListener(replicationListeners.get(dbName + "_push"));
+                        replications.get(dbName + "_pull").addChangeListener(replicationListeners.get(dbName + "_pull"));
                     }
-
                 } catch (final Exception e) {
                     callback.error(e.getMessage());
                 }
