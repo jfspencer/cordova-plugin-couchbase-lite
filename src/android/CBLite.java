@@ -195,7 +195,7 @@ public class CBLite extends CordovaPlugin {
                             @Override
                             public void changed(Replication.ChangeEvent event) {
                                 Replication.ReplicationStatus status = event.getStatus();
-                                PluginResult result = new PluginResult(PluginResult.Status.OK, "push replication: " + status.toString());
+                                PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"type\":\"push\",\"message\":" +  status.toString() + "}");
                                 result.setKeepCallback(true);
                                 callback.sendPluginResult(result);
                             }
@@ -204,7 +204,7 @@ public class CBLite extends CordovaPlugin {
                             @Override
                             public void changed(Replication.ChangeEvent event) {
                                 Replication.ReplicationStatus status = event.getStatus();
-                                PluginResult result = new PluginResult(PluginResult.Status.OK, "pull replication: " + status.toString());
+                                PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"type\":\"pull\",\"message\":" +  status.toString() + "}");
                                 result.setKeepCallback(true);
                                 callback.sendPluginResult(result);
                             }
