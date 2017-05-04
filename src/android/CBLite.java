@@ -22,6 +22,7 @@ import com.couchbase.lite.Database;
 import com.couchbase.lite.Manager;
 import com.couchbase.lite.auth.Authenticator;
 import com.couchbase.lite.auth.AuthenticatorFactory;
+import com.couchbase.lite.replicator.RemoteRequestResponseException;
 import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
@@ -186,7 +187,7 @@ public class CBLite extends CordovaPlugin {
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
-                    String dbName = args.getString(0);
+                    final String dbName = args.getString(0);
                     if (replicationListeners == null) {
                         replicationListeners = new HashMap<String, Replication.ChangeListener>();
                     }
@@ -194,19 +195,55 @@ public class CBLite extends CordovaPlugin {
                         replicationListeners.put(dbName + "_push", new Replication.ChangeListener() {
                             @Override
                             public void changed(Replication.ChangeEvent event) {
-                                Replication.ReplicationStatus status = event.getStatus();
-                                PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"type\":\"push\",\"message\":" +  status.toString() + "}");
-                                result.setKeepCallback(true);
-                                callback.sendPluginResult(result);
+                                if (event.getError() != null) {
+                                    Throwable lastError = event.getError();
+                                    if (lastError instanceof RemoteRequestResponseException) {
+                                        RemoteRequestResponseException exception = (RemoteRequestResponseException) lastError;
+                                        if (exception.getCode() == 401) {
+                                            PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"error\",\"message\":\"REPLICATION_UNAUTHORIZED\"}");
+                                            result.setKeepCallback(true);
+                                            callback.sendPluginResult(result);
+                                        }
+                                        else if(exception.getCode() == 404){
+                                            PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"error\",\"message\":\"REPLICATION_NOT_FOUND\"}");
+                                            result.setKeepCallback(true);
+                                            callback.sendPluginResult(result);
+                                        }
+                                    }
+                                }
+                                else {
+                                    Replication.ReplicationStatus status = event.getStatus();
+                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"push\",\"message\":\"" + status.toString() + "\"}");
+                                    result.setKeepCallback(true);
+                                    callback.sendPluginResult(result);
+                                }
                             }
                         });
                         replicationListeners.put(dbName + "_pull", new Replication.ChangeListener() {
                             @Override
                             public void changed(Replication.ChangeEvent event) {
-                                Replication.ReplicationStatus status = event.getStatus();
-                                PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"type\":\"pull\",\"message\":" +  status.toString() + "}");
-                                result.setKeepCallback(true);
-                                callback.sendPluginResult(result);
+                                if (event.getError() != null) {
+                                    Throwable lastError = event.getError();
+                                    if (lastError instanceof RemoteRequestResponseException) {
+                                        RemoteRequestResponseException exception = (RemoteRequestResponseException) lastError;
+                                        if (exception.getCode() == 401) {
+                                            PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"error\",\"message\":\"REPLICATION_UNAUTHORIZED\"}");
+                                            result.setKeepCallback(true);
+                                            callback.sendPluginResult(result);
+                                        }
+                                        else if(exception.getCode() == 404){
+                                            PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"error\",\"message\":\"REPLICATION_NOT_FOUND\"}");
+                                            result.setKeepCallback(true);
+                                            callback.sendPluginResult(result);
+                                        }
+                                    }
+                                }
+                                else {
+                                    Replication.ReplicationStatus status = event.getStatus();
+                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"pull\",\"message\":\"" + status.toString() + "\"}");
+                                    result.setKeepCallback(true);
+                                    callback.sendPluginResult(result);
+                                }
                             }
                         });
                         replications.get(dbName + "_push").addChangeListener(replicationListeners.get(dbName + "_push"));
