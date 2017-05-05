@@ -195,55 +195,13 @@ public class CBLite extends CordovaPlugin {
                         replicationListeners.put(dbName + "_push", new Replication.ChangeListener() {
                             @Override
                             public void changed(Replication.ChangeEvent event) {
-                                if (event.getError() != null) {
-                                    Throwable lastError = event.getError();
-                                    if (lastError instanceof RemoteRequestResponseException) {
-                                        RemoteRequestResponseException exception = (RemoteRequestResponseException) lastError;
-                                        if (exception.getCode() == 401) {
-                                            PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"error\",\"message\":\"REPLICATION_UNAUTHORIZED\"}");
-                                            result.setKeepCallback(true);
-                                            callback.sendPluginResult(result);
-                                        }
-                                        else if(exception.getCode() == 404){
-                                            PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"error\",\"message\":\"REPLICATION_NOT_FOUND\"}");
-                                            result.setKeepCallback(true);
-                                            callback.sendPluginResult(result);
-                                        }
-                                    }
-                                }
-                                else {
-                                    Replication.ReplicationStatus status = event.getStatus();
-                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"push\",\"message\":\"" + status.toString() + "\"}");
-                                    result.setKeepCallback(true);
-                                    callback.sendPluginResult(result);
-                                }
+                                handleSyncStateEvent(event, dbName, "push", callback);
                             }
                         });
                         replicationListeners.put(dbName + "_pull", new Replication.ChangeListener() {
                             @Override
                             public void changed(Replication.ChangeEvent event) {
-                                if (event.getError() != null) {
-                                    Throwable lastError = event.getError();
-                                    if (lastError instanceof RemoteRequestResponseException) {
-                                        RemoteRequestResponseException exception = (RemoteRequestResponseException) lastError;
-                                        if (exception.getCode() == 401) {
-                                            PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"error\",\"message\":\"REPLICATION_UNAUTHORIZED\"}");
-                                            result.setKeepCallback(true);
-                                            callback.sendPluginResult(result);
-                                        }
-                                        else if(exception.getCode() == 404){
-                                            PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"error\",\"message\":\"REPLICATION_NOT_FOUND\"}");
-                                            result.setKeepCallback(true);
-                                            callback.sendPluginResult(result);
-                                        }
-                                    }
-                                }
-                                else {
-                                    Replication.ReplicationStatus status = event.getStatus();
-                                    PluginResult result = new PluginResult(PluginResult.Status.OK, "{\"db\":\"" + dbName + "\",\"type\":\"pull\",\"message\":\"" + status.toString() + "\"}");
-                                    result.setKeepCallback(true);
-                                    callback.sendPluginResult(result);
-                                }
+                                handleSyncStateEvent(event, dbName, "pull", callback);
                             }
                         });
                         replications.get(dbName + "_push").addChangeListener(replicationListeners.get(dbName + "_push"));
@@ -254,6 +212,31 @@ public class CBLite extends CordovaPlugin {
                 }
             }
         });
+    }
+
+    static private void handleSyncStateEvent(final Replication.ChangeEvent event, final String dbName, final String type, final CallbackContext callback){
+        String response;
+        Replication.ReplicationStatus status = event.getStatus();
+        if (event.getError() != null) {
+            Throwable lastError = event.getError();
+            if (lastError instanceof RemoteRequestResponseException) {
+                RemoteRequestResponseException exception = (RemoteRequestResponseException) lastError;
+                if (exception.getCode() == 401) response = replicationResponse(dbName, "error_" + type, "REPLICATION_UNAUTHORIZED");
+                else if(exception.getCode() == 404) response = replicationResponse(dbName, "error_" + type, "REPLICATION_NOT_FOUND");
+                else if(exception.getCode() > 0) response = replicationResponse(dbName, "error_" + type, "REPLICATION_ERROR_CODE_" + exception.getCode());
+                else response = replicationResponse(dbName, "error_" + type, "REPLICATION_UNKNOWN_ERROR");
+            }
+            else response = replicationResponse(dbName, type, status.toString());
+        }
+        else response = replicationResponse(dbName, type, status.toString());
+
+        PluginResult result = new PluginResult(PluginResult.Status.OK, response);
+        result.setKeepCallback(true);
+        callback.sendPluginResult(result);
+    }
+
+    static private String replicationResponse(String dbName, String type, String Message){
+        return "{\"db\":\"" + dbName + "\",\"type\":\"" + type + "\",\"message\":\"" + Message + "\"}";
     }
 
     private void compact(final JSONArray args, final CallbackContext callback) {

@@ -47,21 +47,55 @@ static NSThread *cblThread;
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+
         [[NSNotificationCenter defaultCenter]
-         addObserverForName: kCBLDatabaseChangeNotification
-         object: dbs[dbName]
-         queue: nil
-         usingBlock: ^(NSNotification *n) {
-             NSArray* changes = n.userInfo[@"changes"];
-             for (CBLDatabaseChange* change in changes){
-                 CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:change.documentID];
-                 [pluginResult setKeepCallbackAsBool:YES];
-                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+         addObserverForName:kCBLReplicationChangeNotification
+         object:replications[[NSString stringWithFormat:@"%@%@", dbName, @"_push"]]
+         queue:nil
+         usingBlock:^(NSNotification *n) {
+             CBLReplication *push = replications[[NSString stringWithFormat:@"%@%@", dbName, @"_push"]];
+             NSString *response;
+             BOOL active = (push.status == kCBLReplicationActive);
+             if(active) response = [CBLite jsonSyncStatus:@"REPLICATION_ACTIVE" withDb:dbName withType:@"push"];
+             else response = [CBLite jsonSyncStatus:@"REPLICATION_IDLE" withDb:dbName withType:@"push"];
+
+             NSError *error = push.lastError ? push.lastError : nil;
+             if(error != nil){
+                 if(error.code == 401) response = [CBLite jsonSyncStatus:@"REPLICATION_UNAUTHORIZED" withDb:dbName withType:@"error_push"];
+                 if(error.code == 404) response = [CBLite jsonSyncStatus:@"REPLICATION_NOT_FOUND" withDb:dbName withType:@"error_push"];
              }
+             CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:response];
+             [pluginResult setKeepCallbackAsBool:YES];
+             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }];
+
+        [[NSNotificationCenter defaultCenter]
+         addObserverForName:kCBLReplicationChangeNotification
+         object:replications[[NSString stringWithFormat:@"%@%@", dbName, @"_pull"]]
+         queue:nil
+         usingBlock:^(NSNotification *n) {
+             CBLReplication *pull = replications[[NSString stringWithFormat:@"%@%@", dbName, @"_pull"]];
+             NSString *response;
+             BOOL active = (pull.status == kCBLReplicationActive);
+             if(active) response = [CBLite jsonSyncStatus:@"REPLICATION_ACTIVE" withDb:dbName withType:@"pull"];
+             else response = [CBLite jsonSyncStatus:@"REPLICATION_IDLE" withDb:dbName withType:@"pull"];
+
+             NSError *error = pull.lastError ? pull.lastError : nil;
+             if(error != nil){
+                 if(error.code == 401) response = [CBLite jsonSyncStatus:@"REPLICATION_UNAUTHORIZED" withDb:dbName withType:@"error_pull"];
+                 if(error.code == 404) response = [CBLite jsonSyncStatus:@"REPLICATION_NOT_FOUND" withDb:dbName withType:@"error_pull"];
+             }
+             CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:response];
+             [pluginResult setKeepCallbackAsBool:YES];
+             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
          }];
     });
-
 }
+
++ (NSString *) jsonSyncStatus:(NSString *)status withDb:(NSString *)db withType:(NSString *)type {
+    return [NSString stringWithFormat:@"{\"db\":\" %@ \",\"type\": \" %@ \" ,|'message|':\" %@ \"}",db, type, status];
+}
+
 
 - (void)compact:(CDVInvokedUrlCommand *)urlCommand {
     dispatch_cbl_async(cblThread, ^{
