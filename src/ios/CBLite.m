@@ -93,7 +93,7 @@ static NSThread *cblThread;
 }
 
 + (NSString *) jsonSyncStatus:(NSString *)status withDb:(NSString *)db withType:(NSString *)type {
-    return [NSString stringWithFormat:@"{\"db\":\" %@ \",\"type\": \" %@ \" ,\"message\":\" %@ \"}",db, type, status];
+    return [NSString stringWithFormat:@"{\"db\":\"%@\",\"type\": \"%@\" ,\"message\":\"%@\"}",db, type, status];
 }
 
 
