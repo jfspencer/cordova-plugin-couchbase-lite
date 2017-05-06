@@ -145,7 +145,7 @@ module.exports.allDocs$ = function allDocs$(options) {
 };
 
 /**
- * @param options:[dbName:string, docId:string, isLocal:boolean]
+ * @param options:[dbName:string, docId:string, isLocal:string<true || false>]
  * @returns JSON:Object
  */
 module.exports.get = function get(options) {

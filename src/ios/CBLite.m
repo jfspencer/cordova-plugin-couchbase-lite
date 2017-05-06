@@ -93,7 +93,7 @@ static NSThread *cblThread;
 }
 
 + (NSString *) jsonSyncStatus:(NSString *)status withDb:(NSString *)db withType:(NSString *)type {
-    return [NSString stringWithFormat:@"{\"db\":\" %@ \",\"type\": \" %@ \" ,|'message|':\" %@ \"}",db, type, status];
+    return [NSString stringWithFormat:@"{\"db\":\" %@ \",\"type\": \" %@ \" ,\"message\":\" %@ \"}",db, type, status];
 }
 
 
@@ -244,9 +244,9 @@ static NSThread *cblThread;
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSString *id = [urlCommand.arguments objectAtIndex:1];
-        BOOL isLocal = (BOOL)[urlCommand.arguments objectAtIndex:2];
+        NSString *isLocal = [urlCommand.arguments objectAtIndex:2];
 
-        if(isLocal){
+        if([isLocal isEqualToString:@"true"]){
             CBLJSONDict *doc = [dbs[dbName] existingLocalDocumentWithID: id];
             if(doc != NULL){
                 NSError *error2;
