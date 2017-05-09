@@ -329,16 +329,14 @@ static NSThread *cblThread;
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSString* docId = [urlCommand.arguments objectAtIndex:1];
         NSString* jsonString = [urlCommand.arguments objectAtIndex:2];
-        BOOL isLocal = (BOOL)[urlCommand.arguments objectAtIndex:3];
+        NSString* isLocal = [urlCommand.arguments objectAtIndex:3];
 
         NSStringEncoding  encoding = NSUTF8StringEncoding;
         NSData * jsonData = [jsonString dataUsingEncoding:encoding];
         NSError * error=nil;
         NSDictionary * jsonDictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&error];
 
-
-
-        if(isLocal){
+        if([isLocal isEqualToString:@"true"]){
             NSError * _Nullable __autoreleasing * error2 = NULL;
             [dbs[dbName] putLocalDocument:jsonDictionary withID:docId error: error2];
         }
@@ -396,11 +394,13 @@ static NSThread *cblThread;
     cblThread = [[NSThread alloc] initWithTarget: self selector:@selector(cblThreadMain) object:nil];
     [cblThread start];
 
-    if(dbmgr != nil) [dbmgr close];
-    if(dbs == nil){dbs = [NSMutableDictionary dictionary];}
-    if(replications == nil){replications = [NSMutableDictionary dictionary];}
-    if(dbmgr != nil) [dbmgr close];
-    dbmgr = [[CBLManager alloc] init];
+    dispatch_cbl_async(cblThread, ^{
+        if(dbmgr != nil) [dbmgr close];
+        if(dbs == nil){dbs = [NSMutableDictionary dictionary];}
+        if(replications == nil){replications = [NSMutableDictionary dictionary];}
+        if(dbmgr != nil) [dbmgr close];
+        dbmgr = [[CBLManager alloc] init];
+    });
 }
 
 void dispatch_cbl_async(NSThread* thread, dispatch_block_t block)
@@ -417,9 +417,9 @@ void dispatch_cbl_async(NSThread* thread, dispatch_block_t block)
     // You need the NSPort here because a runloop with no sources or ports registered with it
     // will simply exit immediately instead of running forever.
     NSPort* keepAlive = [NSPort port];
-    NSRunLoop* rl = [NSRunLoop currentRunLoop];
-    [keepAlive scheduleInRunLoop: rl forMode: NSRunLoopCommonModes];
-    [rl run];
+    NSRunLoop* runLoop = [NSRunLoop currentRunLoop];
+    [keepAlive scheduleInRunLoop: runLoop forMode: NSRunLoopCommonModes];
+    [runLoop run];
 }
 
 @end

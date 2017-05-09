@@ -508,13 +508,10 @@ public class CBLite extends CordovaPlugin {
                     String dbName = args.getString(0);
                     String id = args.getString(1);
                     String jsonString = args.getString(2);
-                    Boolean isLocal = args.getBoolean(3);
+                    String isLocal = args.getString(3);
 
-                    ObjectMapper mapper = new ObjectMapper();
-
-                    if (isLocal) {
-                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
-                        });
+                    if (isLocal.equals("true")) {
+                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
                         dbs.get(dbName).putLocalDocument(id, mapDoc);
                         callback.success("local upsert successful");
                     } else {
