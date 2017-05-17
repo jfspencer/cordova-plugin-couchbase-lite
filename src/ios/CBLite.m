@@ -154,14 +154,11 @@ static NSThread *cblThread;
 
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand {
     dispatch_cbl_async(cblThread, ^{
-        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-        CBLDatabase *db = dbs[dbName];
-        if (db != nil) {
-            for (CBLReplication *r in db.allReplications) {
-                [r stop];
-            }
+        for (NSString *r in replications) {
+            CBLReplication * repl = replications[r];
+            [repl stop];
         }
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"replication stopped"];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"all replications stopped"];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     });
 }
@@ -381,8 +378,9 @@ static NSThread *cblThread;
          object:nil];
 
         //cancel all replications
-        for (CBLReplication *r in replications) {
-            [r stop];
+        for (NSString *r in replications) {
+            CBLReplication * repl = replications[r];
+            [repl stop];
         }
 
         replications = nil;
