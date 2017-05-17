@@ -8,6 +8,9 @@ repo. A seperate issue tracker is needed to track issues and progress with the c
  code. This repo does not intend to provide improvements ahead of the main
  repository for the native code. This code will be manually updated as it is
  released from couchbase.
+ 
+ The native API was developed partially out of performance concerns with the REST server and
+ also in preparation for Couchbase Lite 2.
 
 
 This project depends on
