@@ -179,7 +179,7 @@ files folder on android or the root of the app sandbox on ios.
     cbl.putAttachment(['dbId','docId','file', 'attachName','mime', 'dirPath']).then(... done)
     
 ### upsert
-Params: [dbId:string, docId:string, jsonString:string, isLocal:boolean]
+Params: [dbId:string, docId:string, jsonString:string, isLocal:string ("local" || "normal")]
 
 Returns: Promise -> string
 
