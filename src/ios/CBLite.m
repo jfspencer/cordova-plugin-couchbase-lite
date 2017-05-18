@@ -333,7 +333,7 @@ static NSThread *cblThread;
         NSError * error=nil;
         NSDictionary * jsonDictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&error];
 
-        if([isLocal isEqualToString:@"true"]){
+        if([isLocal isEqualToString:@"local"]){
             NSError * _Nullable __autoreleasing * error2 = NULL;
             [dbs[dbName] putLocalDocument:jsonDictionary withID:docId error: error2];
         }

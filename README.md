@@ -12,7 +12,6 @@ repo. A seperate issue tracker is needed to track issues and progress with the c
  The native API was developed partially out of performance concerns with the REST server and
  also in preparation for Couchbase Lite 2.
 
-
 This project depends on
 [RxJS 5.x](https://medialize.github.io/URI.js/), [lodash](https://lodash.com/docs) and an
 [A+ compliant Promise library](https://github.com/promises-aplus/promises-spec/blob/master/implementations.md)
