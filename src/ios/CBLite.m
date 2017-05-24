@@ -331,7 +331,7 @@ static NSThread *cblThread;
         NSStringEncoding  encoding = NSUTF8StringEncoding;
         NSData * jsonData = [jsonString dataUsingEncoding:encoding];
         NSError * error=nil;
-        NSDictionary * jsonDictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&error];
+        NSMutableDictionary * jsonDictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&error];
 
         if([isLocal isEqualToString:@"local"]){
             NSError * _Nullable __autoreleasing * error2 = NULL;
@@ -342,7 +342,14 @@ static NSThread *cblThread;
             CBLDocument* doc = [dbs[dbName] existingDocumentWithID: docId];
             //if exists, force update
             if(doc != nil){
-                if (![doc putProperties: jsonDictionary error: &error]) {
+                if (![doc update: ^BOOL(CBLUnsavedRevision *newRev) {
+                    [newRev setUserProperties:jsonDictionary];
+                    return YES;
+                } error: &error]) {
+                    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"updated failed"];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                }
+                else {
                     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"updated document"];
                     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
                 }

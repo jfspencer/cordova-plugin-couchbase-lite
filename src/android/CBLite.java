@@ -516,14 +516,25 @@ public class CBLite extends CordovaPlugin {
                         callback.success("local upsert successful");
                     } else {
                         Document doc = dbs.get(dbName).getExistingDocument(id);
-                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
-                        });
-                        if (doc != null) doc.putProperties(mapDoc);
-                        else {
-                            Document newDoc = dbs.get(dbName).getDocument(id);
-                            newDoc.putProperties(mapDoc);
+                        //if doc does not exist
+                        if(doc == null){
+                            final Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                            Document document = dbs.get(dbName).getDocument(id);
+                            document.putProperties(mapDoc);
+                            callback.success("upsert successful");
                         }
-                        callback.success("upsert successful");
+                        //doc exists, force update
+                        else{
+                            final Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                            doc.update(new Document.DocumentUpdater() {
+                                @Override
+                                public boolean update(UnsavedRevision newRevision) {
+                                    newRevision.setUserProperties(mapDoc);
+                                    callback.success("upsert successful");
+                                    return true;
+                                }
+                            });
+                        }
                     }
                 } catch (final Exception e) {
                     callback.error(e.getMessage());
