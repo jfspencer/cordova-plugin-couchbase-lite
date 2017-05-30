@@ -3,6 +3,8 @@ package com.couchbase.cblite.phonegap;
 import android.content.Context;
 import android.text.TextUtils;
 
+import org.apache.commons.collections4.ListUtils;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
@@ -27,10 +29,8 @@ import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
 import com.couchbase.lite.javascript.JavaScriptViewCompiler;
-import com.couchbase.lite.util.Log;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -374,14 +374,14 @@ public class CBLite extends CordovaPlugin {
                     query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
                     query.setPrefetch(false);
                     QueryEnumerator allIds = query.run();
-                    List<Object> idList = Lists.newArrayList();
+                    ArrayList<Object> idList = new ArrayList<Object>();
                     for (Iterator<QueryRow> it = allIds; it.hasNext(); ) {
                         QueryRow row = it.next();
                         idList.add(row.getDocumentId());
                     }
 
                     //iterate over the idBatches
-                    final List<List<Object>> idBatches = Lists.partition(idList, 1000);
+                    final List<List<Object>> idBatches = ListUtils.partition(idList, 1000);
                     for (final List<Object> batch : idBatches) {
                         Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
                             @Override
