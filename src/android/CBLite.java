@@ -30,6 +30,7 @@ import com.couchbase.lite.javascript.JavaScriptViewCompiler;
 import com.couchbase.lite.util.Log;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -365,28 +366,30 @@ public class CBLite extends CordovaPlugin {
             public void run() {
                 try {
                     final String dbName = args.getString(0);
-                    final int totalDocs = dbs.get(dbName).getDocumentCount();
-                    final int batch = 500;
-                    final int segments = batch > totalDocs ? 1 : totalDocs / batch;
-                    final ArrayList<Integer> skipList = new ArrayList<Integer>();
-
                     final AtomicInteger numCompleted = new AtomicInteger();
-
-                    for (int i = 0; i <= segments; i++) skipList.add(i * batch);
-
                     ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS);
 
-                    for (Integer skipCount : skipList) {
-                        final int innerSkip = skipCount;
+                    //get an array of all database ids
+                    Query query = dbs.get(dbName).createAllDocumentsQuery();
+                    query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
+                    query.setPrefetch(false);
+                    QueryEnumerator allIds = query.run();
+                    List<Object> idList = Lists.newArrayList();
+                    for (Iterator<QueryRow> it = allIds; it.hasNext(); ) {
+                        QueryRow row = it.next();
+                        idList.add(row.getDocumentId());
+                    }
 
+                    //iterate over the idBatches
+                    final List<List<Object>> idBatches = Lists.partition(idList, 1000);
+                    for (final List<Object> batch : idBatches) {
                         Future<Boolean> isComplete = executor.submit(new Callable<Boolean>() {
                             @Override
                             public Boolean call() throws Exception {
                                 Query query = dbs.get(dbName).createAllDocumentsQuery();
                                 query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
                                 query.setPrefetch(true);
-                                query.setLimit(batch);
-                                query.setSkip(innerSkip);
+                                query.setKeys(batch);
                                 try {
                                     QueryEnumerator allDocsQuery = query.run();
                                     final ArrayList<String> responseBuffer = new ArrayList<String>();
@@ -417,7 +420,7 @@ public class CBLite extends CordovaPlugin {
                     executor.submit(new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
-                            while (numCompleted.get() < skipList.size()) {
+                            while (numCompleted.get() < idBatches.size()) {
                                 Thread.sleep(1000);
                             }
                             PluginResult finalResult = new PluginResult(PluginResult.Status.OK, "");
