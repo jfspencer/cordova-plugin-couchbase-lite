@@ -82,6 +82,5 @@
     <framework src="com.fasterxml.jackson.core:jackson-core:2.5.3"/>
     <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
     <framework src="com.fasterxml.jackson.module:jackson-module-afterburner:2.5.3"/>
-    <framework src="lib/android/guava-22.0.jar" target-dir="libs"/>
   </platform>
 </plugin>
