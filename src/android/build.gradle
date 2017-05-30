@@ -9,7 +9,7 @@ dependencies {
     compile(name: 'couchbase-lite-android-1.4.0', ext: 'aar')
     compile(name: 'couchbase-lite-android-sqlite-custom-1.4.0', ext: 'aar')
     compile(name: 'couchbase-lite-android-forestdb-1.4.0', ext: 'aar')
-    compile(group: 'com.google.guava', name: 'guava', version: '22.0')
+    compile group: 'com.google.guava', name: 'guava', version: '22.0'
 }
 
 android {
