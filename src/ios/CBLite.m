@@ -202,7 +202,7 @@ static NSThread *cblThread;
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-        int batchSize = 200;
+        int batchSize = 5000;
         CBLQuery* idQuery = [dbs[dbName] createAllDocumentsQuery];
         idQuery.allDocsMode = kCBLAllDocs;
         idQuery.prefetch = NO;
@@ -211,7 +211,9 @@ static NSThread *cblThread;
         NSMutableArray *allIds = [NSMutableArray array];
         CBLQueryEnumerator* allIdQuery = [idQuery run: &idQueryError];
         for (CBLQueryRow* row in allIdQuery) {
-            [allIds addObject:row.documentID];
+            @autoreleasepool {
+                [allIds addObject:row.documentID];
+            }
         }
 
         NSMutableArray *idBatches = [NSMutableArray array];
@@ -219,15 +221,19 @@ static NSThread *cblThread;
         int j = 0;
 
         while(remainingIds){
-            NSRange batchRange = NSMakeRange(j, MIN(batchSize, remainingIds));
-            NSArray *batch = [allIds subarrayWithRange: batchRange];
-            [idBatches addObject:batch];
-            remainingIds -= batchRange.length;
-            j += batchRange.length;
+            @autoreleasepool {
+                NSRange batchRange = NSMakeRange(j, MIN(batchSize, remainingIds));
+                NSArray *batch = [allIds subarrayWithRange: batchRange];
+                [idBatches addObject:batch];
+                remainingIds -= batchRange.length;
+                j += batchRange.length;
+            }
         }
 
-        for(NSMutableArray *batch in idBatches){
-            [self processAllDocsBatch:batch withUrlCommand:urlCommand onDatabase:dbName];
+        for(NSArray *batch in idBatches){
+            @autoreleasepool{
+                [self processAllDocsBatch:batch withUrlCommand:urlCommand onDatabase:dbName];
+            }
         }
 
         CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@""];
@@ -238,30 +244,26 @@ static NSThread *cblThread;
 
 - (void) processAllDocsBatch:(NSArray *) batch withUrlCommand:(CDVInvokedUrlCommand *) urlCommand onDatabase:(NSString *)dbName {
     dispatch_cbl_async(cblThread, ^{
-        __block CBLQuery* batchQuery = [dbs[dbName] createAllDocumentsQuery];
-        batchQuery.allDocsMode = kCBLAllDocs;
-        batchQuery.prefetch = YES;
-        batchQuery.keys = batch;
+        @autoreleasepool{
+            CBLQuery* batchQuery = [dbs[dbName] createAllDocumentsQuery];
+            batchQuery.allDocsMode = kCBLAllDocs;
+            batchQuery.prefetch = YES;
+            batchQuery.keys = batch;
 
-        NSError *queryError;
-        __block CBLQueryEnumerator* batchResults = [batchQuery run: &queryError];
-        __block NSMutableArray *responseBuffer = [NSMutableArray array];
-        for (CBLQueryRow* row in batchResults) {
-            NSError *error;
-            __block NSData *data = [NSJSONSerialization dataWithJSONObject:row.documentProperties
-                                                           options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
-                                                             error:&error];
-            NSString *json = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            [responseBuffer addObject:json];
-            data = nil;
+            NSError *queryError;
+            CBLQueryEnumerator* batchResults = [batchQuery run: &queryError];
+            NSMutableArray *responseBuffer = [[NSMutableArray alloc] init];
+            for (CBLQueryRow* row in batchResults) {
+                NSError *error;
+                [responseBuffer addObject:[[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:row.documentProperties
+                                                                                                         options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
+                                                                                                           error:&error] encoding:NSUTF8StringEncoding]];
+            }
+            NSString *response = [responseBuffer componentsJoinedByString:@","];
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", response]];
+            [pluginResult setKeepCallbackAsBool:YES];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
-        NSString *response = [responseBuffer componentsJoinedByString:@","];
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", response]];
-        [pluginResult setKeepCallbackAsBool:YES];
-        responseBuffer = nil;
-        batchQuery = nil;
-        batchResults = nil;
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     });
 }
 
