@@ -202,38 +202,66 @@ static NSThread *cblThread;
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-        CBLQuery* query = [dbs[dbName] createAllDocumentsQuery];
-        NSInteger batch = 1000;
-        query.allDocsMode = kCBLAllDocs;
-        query.prefetch = YES;
-        //query.limit = limit;
-        NSError *error2;
-        CBLQueryEnumerator* result = [query run: &error2];
-        NSMutableArray *responseBuffer = [NSMutableArray array];
-        for (CBLQueryRow* row in result) {
-            NSError *error;
-            NSData *data = [NSJSONSerialization dataWithJSONObject:row.documentProperties
-                                                           options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
-                                                             error:&error];
-            NSString *json = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            [responseBuffer addObject:json];
-            if([responseBuffer count] > batch){
-                NSString *response = [[responseBuffer subarrayWithRange:NSMakeRange(0, batch)] componentsJoinedByString:@","];
-                [responseBuffer removeObjectsInRange:NSMakeRange(0, batch)];
-                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", response]];
-                [pluginResult setKeepCallbackAsBool:YES];
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
-            }
+        int batchSize = 200;
+        CBLQuery* idQuery = [dbs[dbName] createAllDocumentsQuery];
+        idQuery.allDocsMode = kCBLAllDocs;
+        idQuery.prefetch = NO;
+
+        NSError *idQueryError;
+        NSMutableArray *allIds = [NSMutableArray array];
+        CBLQueryEnumerator* allIdQuery = [idQuery run: &idQueryError];
+        for (CBLQueryRow* row in allIdQuery) {
+            [allIds addObject:row.documentID];
         }
 
-        NSString *finalResponse = [responseBuffer componentsJoinedByString:@","];
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", finalResponse]];
-        [pluginResult setKeepCallbackAsBool:YES];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        NSMutableArray *idBatches = [NSMutableArray array];
+        NSUInteger remainingIds = [allIds count];
+        int j = 0;
+
+        while(remainingIds){
+            NSRange batchRange = NSMakeRange(j, MIN(batchSize, remainingIds));
+            NSArray *batch = [allIds subarrayWithRange: batchRange];
+            [idBatches addObject:batch];
+            remainingIds -= batchRange.length;
+            j += batchRange.length;
+        }
+
+        for(NSMutableArray *batch in idBatches){
+            [self processAllDocsBatch:batch withUrlCommand:urlCommand onDatabase:dbName];
+        }
 
         CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@""];
         [finalPluginResult setKeepCallbackAsBool:NO];
         [self.commandDelegate sendPluginResult:finalPluginResult callbackId:urlCommand.callbackId];
+    });
+}
+
+- (void) processAllDocsBatch:(NSArray *) batch withUrlCommand:(CDVInvokedUrlCommand *) urlCommand onDatabase:(NSString *)dbName {
+    dispatch_cbl_async(cblThread, ^{
+        __block CBLQuery* batchQuery = [dbs[dbName] createAllDocumentsQuery];
+        batchQuery.allDocsMode = kCBLAllDocs;
+        batchQuery.prefetch = YES;
+        batchQuery.keys = batch;
+
+        NSError *queryError;
+        __block CBLQueryEnumerator* batchResults = [batchQuery run: &queryError];
+        __block NSMutableArray *responseBuffer = [NSMutableArray array];
+        for (CBLQueryRow* row in batchResults) {
+            NSError *error;
+            __block NSData *data = [NSJSONSerialization dataWithJSONObject:row.documentProperties
+                                                           options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
+                                                             error:&error];
+            NSString *json = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            [responseBuffer addObject:json];
+            data = nil;
+        }
+        NSString *response = [responseBuffer componentsJoinedByString:@","];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", response]];
+        [pluginResult setKeepCallbackAsBool:YES];
+        responseBuffer = nil;
+        batchQuery = nil;
+        batchResults = nil;
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     });
 }
 
