@@ -324,30 +324,32 @@ static NSThread *cblThread;
 #pragma mark WRITE
 - (void)putAttachment:(CDVInvokedUrlCommand *)urlCommand{
     dispatch_cbl_async(cblThread, ^{
-        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-        NSString* docId = [urlCommand.arguments objectAtIndex:1];
-        NSString* fileName = [urlCommand.arguments objectAtIndex:2];
-        NSString* name = [urlCommand.arguments objectAtIndex:3];
-        NSString* mime = [urlCommand.arguments objectAtIndex:4];
-        NSString* dirName = [urlCommand.arguments objectAtIndex:5];
-        NSError *error;
-        CBLDatabase *db = dbs[dbName];
-        CBLDocument* doc = [db documentWithID: docId];
-        CBLUnsavedRevision* newRev = [doc.currentRevision createRevision];
+        @autoreleasepool{
+            NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+            NSString* docId = [urlCommand.arguments objectAtIndex:1];
+            NSString* fileName = [urlCommand.arguments objectAtIndex:2];
+            NSString* name = [urlCommand.arguments objectAtIndex:3];
+            NSString* mime = [urlCommand.arguments objectAtIndex:4];
+            NSString* dirName = [urlCommand.arguments objectAtIndex:5];
+            NSError *error;
+            CBLDatabase *db = dbs[dbName];
+            CBLDocument* doc = [db documentWithID: docId];
+            CBLUnsavedRevision* newRev = [doc.currentRevision createRevision];
 
-        NSString *docsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-        NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, dirName];
-        NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
+            NSString *docsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+            NSString *mediaPath = [NSString stringWithFormat:@"%@/%@", docsPath, dirName];
+            NSString *filePath = [mediaPath stringByAppendingPathComponent:fileName];
 
-        NSData *data = [[NSFileManager defaultManager] contentsAtPath:filePath];
+            NSData *data = [[NSFileManager defaultManager] contentsAtPath:filePath];
 
-        [newRev setAttachmentNamed: name
-                   withContentType: mime
-                           content: data];
-        assert([newRev save: &error]);
+            [newRev setAttachmentNamed: name
+                       withContentType: mime
+                               content: data];
+            assert([newRev save: &error]);
 
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"attachment save success"];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"attachment save success"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
     });
 }
 
