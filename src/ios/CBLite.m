@@ -275,12 +275,19 @@ static NSThread *cblThread;
 
         if([isLocal isEqualToString:@"true"]){
             CBLJSONDict *doc = [dbs[dbName] existingLocalDocumentWithID: id];
-            if(doc != NULL){
+            if(doc != nil){
                 NSError *error2;
-                NSData *json = [NSJSONSerialization dataWithJSONObject:doc options:0 error:&error2];
-                CDVPluginResult* pluginResult =
-                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                @try {
+                    NSData *json = [NSJSONSerialization dataWithJSONObject:doc options:0 error:&error2];
+                    CDVPluginResult* pluginResult =
+                    [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                }
+                @catch (NSException *exception) {
+                    CDVPluginResult* pluginResult =
+                    [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"null"];
+                    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+                }
             }
             else {
                 CDVPluginResult* pluginResult =
