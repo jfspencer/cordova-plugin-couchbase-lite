@@ -12,6 +12,7 @@
 
 static NSMutableDictionary *dbs;
 static NSMutableDictionary *replications;
+static NSMutableArray *callbacks;
 
 static CBLManager *dbmgr;
 static NSThread *cblThread;
@@ -21,6 +22,9 @@ static NSThread *cblThread;
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
     [pluginResult setKeepCallbackAsBool:YES];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+
+    [callbacks addObject:urlCommand.callbackId];
+
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         [[NSNotificationCenter defaultCenter]
@@ -45,6 +49,9 @@ static NSThread *cblThread;
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
     [pluginResult setKeepCallbackAsBool:YES];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+
+    [callbacks addObject:urlCommand.callbackId];
+
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
 
@@ -429,8 +436,16 @@ static NSThread *cblThread;
             [repl stop];
         }
 
-        replications = nil;
-        dbs = nil;
+        //cancel all callbacks
+        for (NSString *cbId in callbacks){
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+            [pluginResult setKeepCallbackAsBool:NO];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:cbId];
+        }
+
+        [callbacks removeAllObjects];
+        [replications removeAllObjects];
+        [dbs removeAllObjects];
     });
 }
 
@@ -442,6 +457,7 @@ static NSThread *cblThread;
         if(dbmgr != nil) [dbmgr close];
         if(dbs == nil){dbs = [NSMutableDictionary dictionary];}
         if(replications == nil){replications = [NSMutableDictionary dictionary];}
+        if(callbacks == nil){callbacks = [NSMutableArray array];}
         if(dbmgr != nil) [dbmgr close];
         dbmgr = [[CBLManager alloc] init];
     });

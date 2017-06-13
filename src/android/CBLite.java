@@ -53,23 +53,28 @@ public class CBLite extends CordovaPlugin {
     private static HashMap<String, Replication> replications = null;
     private static HashMap<String, Database.ChangeListener> changeListeners = null;
     private static HashMap<String, Replication.ChangeListener> replicationListeners = null;
+    private static ArrayList<CallbackContext> callbacks = null;
     private static int runnerCount = 0;
     final static int MAX_THREADS = 3;
     private static ObjectMapper mapper = new ObjectMapper();
 
     public CBLite() {
         super();
-        System.out.println("CBLite() constructor called");
     }
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
-        System.out.println("initialize() called");
         super.initialize(cordova, webView);
         try {
             View.setCompiler(new JavaScriptViewCompiler());
             Database.setFilterCompiler(new JavaScriptReplicationFilterCompiler());
             dbmgr = startCBLite(this.cordova.getActivity());
+
+            dbs = new HashMap<String, Database>();
+            replications = new HashMap<String, Replication>();
+            changeListeners = new HashMap<String, Database.ChangeListener>();
+            replicationListeners = new HashMap<String, Replication.ChangeListener>();
+            callbacks = new ArrayList<CallbackContext>();
         } catch (final Exception e) {
             e.printStackTrace();
         }
@@ -78,41 +83,42 @@ public class CBLite extends CordovaPlugin {
     @Override
     public void onReset() {
         //cancel change listeners
-        if (changeListeners != null) {
-            for (String dbName : changeListeners.keySet()) {
-                for (Database.ChangeListener listener : changeListeners.values()) {
-                    dbs.get(dbName).removeChangeListener(listener);
-                }
+        for (String dbName : changeListeners.keySet()) {
+            for (Database.ChangeListener listener : changeListeners.values()) {
+                dbs.get(dbName).removeChangeListener(listener);
             }
         }
 
-        if (replicationListeners != null) {
-            for (String dbName : replicationListeners.keySet()) {
-                for (Replication.ChangeListener listener : replicationListeners.values()) {
-                    try {
-                        replications.get(dbName + "_push").removeChangeListener(listener);
-                    } catch (Exception e) {
-                    }
-                    try {
-                        replications.get(dbName + "_pull").removeChangeListener(listener);
-                    } catch (Exception e) {
-                    }
-
+        for (String dbName : replicationListeners.keySet()) {
+            for (Replication.ChangeListener listener : replicationListeners.values()) {
+                try {
+                    replications.get(dbName + "_push").removeChangeListener(listener);
+                } catch (Exception e) {
+                }
+                try {
+                    replications.get(dbName + "_pull").removeChangeListener(listener);
+                } catch (Exception e) {
                 }
             }
         }
 
         //cancel replications
-        if (replications != null) {
-            for (Replication replication : replications.values()) {
-                replication.stop();
-            }
+        for (Replication replication : replications.values()) {
+            replication.stop();
         }
 
-        if (dbs != null) dbs.clear();
-        if (changeListeners != null) changeListeners.clear();
-        if (replicationListeners != null) replicationListeners.clear();
-        if (replications != null) replications.clear();
+        //cancel callbacks
+        for (CallbackContext context : callbacks) {
+            PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+            result.setKeepCallback(false);
+            context.sendPluginResult(result);
+        }
+
+        dbs.clear();
+        changeListeners.clear();
+        replicationListeners.clear();
+        replications.clear();
+        callbacks.clear();
         runnerCount = 0;
     }
 
@@ -149,14 +155,13 @@ public class CBLite extends CordovaPlugin {
         result.setKeepCallback(true);
         callback.sendPluginResult(result);
 
+        callbacks.add(callback);
+
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
                     final String dbName = args.getString(0);
 
-                    if (changeListeners == null) {
-                        changeListeners = new HashMap<String, Database.ChangeListener>();
-                    }
                     if (dbs.get(dbName) != null) {
                         changeListeners.put(dbName, new Database.ChangeListener() {
                             @Override
@@ -185,13 +190,14 @@ public class CBLite extends CordovaPlugin {
         PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
         result.setKeepCallback(true);
         callback.sendPluginResult(result);
+
+        callbacks.add(callback);
+
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
                     final String dbName = args.getString(0);
-                    if (replicationListeners == null) {
-                        replicationListeners = new HashMap<String, Replication.ChangeListener>();
-                    }
+
                     if (dbs.get(dbName) != null) {
                         replicationListeners.put(dbName + "_push", new Replication.ChangeListener() {
                             @Override
@@ -215,28 +221,30 @@ public class CBLite extends CordovaPlugin {
         });
     }
 
-    static private void handleSyncStateEvent(final Replication.ChangeEvent event, final String dbName, final String type, final CallbackContext callback){
+    static private void handleSyncStateEvent(final Replication.ChangeEvent event, final String dbName, final String type, final CallbackContext callback) {
         String response;
         Replication.ReplicationStatus status = event.getStatus();
         if (event.getError() != null) {
             Throwable lastError = event.getError();
             if (lastError instanceof RemoteRequestResponseException) {
                 RemoteRequestResponseException exception = (RemoteRequestResponseException) lastError;
-                if (exception.getCode() == 401) response = replicationResponse(dbName, "error_" + type, "REPLICATION_UNAUTHORIZED");
-                else if(exception.getCode() == 404) response = replicationResponse(dbName, "error_" + type, "REPLICATION_NOT_FOUND");
-                else if(exception.getCode() > 0) response = replicationResponse(dbName, "error_" + type, "REPLICATION_ERROR_CODE_" + exception.getCode());
-                else response = replicationResponse(dbName, "error_" + type, "REPLICATION_UNKNOWN_ERROR");
-            }
-            else response = replicationResponse(dbName, type, status.toString());
-        }
-        else response = replicationResponse(dbName, type, status.toString());
+                if (exception.getCode() == 401)
+                    response = replicationResponse(dbName, "error_" + type, "REPLICATION_UNAUTHORIZED");
+                else if (exception.getCode() == 404)
+                    response = replicationResponse(dbName, "error_" + type, "REPLICATION_NOT_FOUND");
+                else if (exception.getCode() > 0)
+                    response = replicationResponse(dbName, "error_" + type, "REPLICATION_ERROR_CODE_" + exception.getCode());
+                else
+                    response = replicationResponse(dbName, "error_" + type, "REPLICATION_UNKNOWN_ERROR");
+            } else response = replicationResponse(dbName, type, status.toString());
+        } else response = replicationResponse(dbName, type, status.toString());
 
         PluginResult result = new PluginResult(PluginResult.Status.OK, response);
         result.setKeepCallback(true);
         callback.sendPluginResult(result);
     }
 
-    static private String replicationResponse(String dbName, String type, String Message){
+    static private String replicationResponse(String dbName, String type, String Message) {
         return "{\"db\":\"" + dbName + "\",\"type\":\"" + type + "\",\"message\":\"" + Message + "\"}";
     }
 
@@ -272,7 +280,6 @@ public class CBLite extends CordovaPlugin {
             public void run() {
                 try {
                     String dbName = args.getString(0);
-                    if (dbs == null) dbs = new HashMap<String, Database>();
                     DatabaseOptions options = new DatabaseOptions();
                     options.setCreate(true);
                     options.setStorageType(Manager.FORESTDB_STORAGE);
@@ -333,8 +340,6 @@ public class CBLite extends CordovaPlugin {
                     URL syncUrl = new URL(args.getString(1));
                     String user = args.getString(2);
                     String pass = args.getString(3);
-
-                    if (replications == null) replications = new HashMap<String, Replication>();
 
                     Replication push = dbs.get(dbName).createPushReplication(syncUrl);
                     Replication pull = dbs.get(dbName).createPullReplication(syncUrl);
@@ -514,21 +519,24 @@ public class CBLite extends CordovaPlugin {
                     String isLocal = args.getString(3);
 
                     if (isLocal.equals("local")) {
-                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                        Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
+                        });
                         dbs.get(dbName).putLocalDocument(id, mapDoc);
                         callback.success("local upsert successful");
                     } else {
                         Document doc = dbs.get(dbName).getExistingDocument(id);
                         //if doc does not exist
-                        if(doc == null){
-                            final Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                        if (doc == null) {
+                            final Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
+                            });
                             Document document = dbs.get(dbName).getDocument(id);
                             document.putProperties(mapDoc);
                             callback.success("upsert successful");
                         }
                         //doc exists, force update
-                        else{
-                            final Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {});
+                        else {
+                            final Map<String, Object> mapDoc = mapper.readValue(jsonString, new TypeReference<Map<String, Object>>() {
+                            });
                             doc.update(new Document.DocumentUpdater() {
                                 @Override
                                 public boolean update(UnsavedRevision newRevision) {
