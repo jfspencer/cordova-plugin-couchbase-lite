@@ -449,6 +449,22 @@ static NSThread *cblThread;
     });
 }
 
+- (void)resetCallbacks:(CDVInvokedUrlCommand *)urlCommand {
+    //cancel all callbacks
+    dispatch_cbl_async(cblThread, ^{
+        for (NSString *cbId in callbacks){
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+            [pluginResult setKeepCallbackAsBool:NO];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:cbId];
+        }
+
+        [callbacks removeAllObjects];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"callbacks reset"];
+        [pluginResult setKeepCallbackAsBool:NO];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+    });
+}
+
 - (void)launchCouchbaseLite {
     cblThread = [[NSThread alloc] initWithTarget: self selector:@selector(cblThreadMain) object:nil];
     [cblThread start];

@@ -17,6 +17,7 @@
 - (void)reset:(CDVInvokedUrlCommand*)urlCommand;
 - (void)stopReplication:(CDVInvokedUrlCommand*)urlCommand;
 - (void)sync:(CDVInvokedUrlCommand*)urlCommand;
+- (void)resetCallbacks:(CDVInvokedUrlCommand*)urlCommand;
 
 //READ
 - (void)allDocs:(CDVInvokedUrlCommand*)urlCommand;

@@ -137,6 +137,7 @@ public class CBLite extends CordovaPlugin {
         else if (action.equals("reset")) reset(args, callback);
         else if (action.equals("stopReplication")) stopReplication(args, callback);
         else if (action.equals("sync")) sync(args, callback);
+        else if (action.equals("resetCallbacks")) resetCallbacks(args, callback);
 
             //READ
         else if (action.equals("allDocs")) allDocs(args, callback);
@@ -148,6 +149,17 @@ public class CBLite extends CordovaPlugin {
         else if (action.equals("upsert")) upsert(args, callback);
 
         return true;
+    }
+
+    private void resetCallbacks(final JSONArray args, final CallbackContext callback){
+        //cancel callbacks
+        for (CallbackContext context : callbacks) {
+            PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+            result.setKeepCallback(false);
+            context.sendPluginResult(result);
+        }
+        callbacks.clear();
+        callback.success("reset callbacks");
     }
 
     private void changesDatabase(final JSONArray args, final CallbackContext callback) {

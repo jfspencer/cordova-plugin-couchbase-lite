@@ -45,6 +45,15 @@ module.exports.compact = function compact(options) {
 };
 
 /**
+ * @returns message:string
+ */
+module.exports.resetCallbacks = function compact() {
+    return new Promise(function (resolve, reject) {
+        exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBLite", "resetCallbacks", []);
+    });
+};
+
+/**
  * @param options:[dbName]
  * @returns docCount:Number
  */
