@@ -306,7 +306,7 @@ static NSThread *cblThread;
             CBLDocument *doc = [dbs[dbName] existingDocumentWithID: id];
             if(doc == nil){
                 CDVPluginResult* pluginResult =
-                [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"null"];
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"null"];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
             NSError *error2;
