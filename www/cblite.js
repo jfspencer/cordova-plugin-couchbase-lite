@@ -9,12 +9,17 @@ var exec = require('cordova/exec');
  * @returns docId:Rx<{id:string, is_delete:boolean}>
  */
 module.exports.changesDatabase$ = function changesDatabase$(options) {
-    return Rx.Observable.create(function (subscriber) {
+    return Rx.Observable.create(function cblChangesSubscribe(observer) {
         exec(function (res) {
-                subscriber.next(eval("(" + res + ")"));
+                try{
+                    observer.next(eval("(" + res + ")"));
+                }
+                catch(e){
+                    observer.error(e);
+                }
             },
             function (err) {
-                subscriber.error(err);
+                observer.error(err);
             }, "CBLite", "changesDatabase", options);
     });
 };
@@ -24,12 +29,17 @@ module.exports.changesDatabase$ = function changesDatabase$(options) {
  * @returns ReplicationStatus:Rx<{status:string, message:string}>
  */
 module.exports.changesReplication$ = function changesReplication$(options) {
-    return Rx.Observable.create(function (subscriber) {
+    return Rx.Observable.create(function cblReplicationSubscribe(observer) {
         exec(function (res) {
-                subscriber.next(eval("(" + res + ")"));
+                try{
+                    observer.next(eval("(" + res + ")"));
+                }
+                catch(e){
+                    observer.error(e);
+                }
             },
             function (err) {
-                subscriber.error(err);
+                observer.error(err);
             }, "CBLite", "changesReplication", options);
     });
 };
