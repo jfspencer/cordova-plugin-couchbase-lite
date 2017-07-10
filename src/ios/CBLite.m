@@ -309,11 +309,18 @@ static NSThread *cblThread;
                 [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"null"];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
-            NSError *error2;
-            NSData *json = [NSJSONSerialization dataWithJSONObject:doc.properties options:0 error:&error2];
-            CDVPluginResult* pluginResult =
-            [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            @try {
+                NSError *error2;
+                NSData *json = [NSJSONSerialization dataWithJSONObject:doc.properties options:0 error:&error2];
+                CDVPluginResult* pluginResult =
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            }
+            @catch (NSException *exception) {
+                CDVPluginResult* pluginResult =
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"null"];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            }
         }
     });
 }
