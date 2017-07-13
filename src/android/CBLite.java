@@ -29,6 +29,7 @@ import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
 import com.couchbase.lite.javascript.JavaScriptViewCompiler;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -66,6 +67,7 @@ public class CBLite extends CordovaPlugin {
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         try {
+            mapper.getFactory().configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true);
             View.setCompiler(new JavaScriptViewCompiler());
             Database.setFilterCompiler(new JavaScriptReplicationFilterCompiler());
             dbmgr = startCBLite(this.cordova.getActivity());
