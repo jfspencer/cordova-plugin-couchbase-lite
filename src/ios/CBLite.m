@@ -261,11 +261,10 @@ static NSThread *cblThread;
             CBLQueryEnumerator* batchResults = [batchQuery run: &queryError];
             NSMutableArray *responseBuffer = [[NSMutableArray alloc] init];
             for (CBLQueryRow* row in batchResults) {
-                //NSError *error;
-                //                [responseBuffer addObject:[[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:row.documentProperties
-                //options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
-                //error:&error] encoding:NSUTF8StringEncoding]];
-                [responseBuffer addObject:[NSString stringWithFormat:@"\"%@\"", row.documentID] ];
+                NSError *error;
+                [responseBuffer addObject:[[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:row.documentProperties
+                                                                                                         options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
+                                                                                                           error:&error] encoding:NSUTF8StringEncoding]];
             }
             NSString *response = [responseBuffer componentsJoinedByString:@","];
             CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", response]];
