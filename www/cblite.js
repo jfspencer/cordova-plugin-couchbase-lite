@@ -171,7 +171,7 @@ module.exports.get = function get(options) {
     return new Promise(function (resolve, reject) {
         exec(function (res) {
                 try {
-                    resolve(res));
+                    resolve(res);
                 }
                 catch (err) {
                     resolve(null)
