@@ -169,7 +169,19 @@ module.exports.allDocs$ = function allDocs$(options) {
  */
 module.exports.get = function get(options) {
     return new Promise(function (resolve, reject) {
-        exec(function (res) {resolve(eval("(" + res + ")"));}, function (err) {reject(err);}, "CBLite", "get", options);
+        exec(function (res) {
+                try {
+                    resolve(eval("(" + res + ")"));
+                }
+                catch (err) {
+                    console.log(error);
+                    resolve(null)
+                }
+            },
+            function (err) {
+                console.log(err)
+                resolve(null);
+            }, "CBLite", "get", options);
     });
 };
 
