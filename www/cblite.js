@@ -175,7 +175,8 @@ module.exports.allDocs$ = function allDocs$(options) {
                 			else {
                 				var dataView = new DataView(res);
                         		var decoder = new TextDecoder('utf-8');
-                				subscriber.next(JSON.parse(decoder.decode(dataView)));
+                        		var dataString = decoder.decode(dataView);
+                				subscriber.next(JSON.parse(dataString));
                 			}
                 		}
                 		catch(e){
@@ -214,7 +215,8 @@ module.exports.get = function get(options) {
                 		try{
                 			var dataView = new DataView(res);
                 			var decoder = new TextDecoder('utf-8');
-                			resolve(JSON.parse(decoder.decode(dataView)));
+                        	var dataString = decoder.decode(dataView);
+                			resolve(JSON.parse(dataString));
                 		}
                 		catch(e){
                 			console.log(e);
