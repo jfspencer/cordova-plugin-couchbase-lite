@@ -266,8 +266,9 @@ static NSThread *cblThread;
                                                                                                          options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
                                                                                                            error:&error] encoding:NSUTF8StringEncoding]];
             }
+
             CDVPluginResult* pluginResult =
-                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[[responseBuffer componentsJoinedByString:@","] dataUsingEncoding:NSUTF8StringEncoding]];
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[[NSString stringWithFormat:@"[%@]", [responseBuffer componentsJoinedByString:@","]] dataUsingEncoding:NSUTF8StringEncoding]];
             [pluginResult setKeepCallbackAsBool:YES];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }

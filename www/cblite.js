@@ -171,7 +171,7 @@ module.exports.allDocs$ = function allDocs$(options) {
                 	else if(device.platform === "iOS"){
                 		try{
                 			if(_.isEqual("complete",res)) subscriber.complete();
-                			else subscriber.next(JSON.parse(decoder.decode(new DataView("[" + res + "]"))));
+                			else subscriber.next(JSON.parse(decoder.decode(new DataView(res))));
                 		}
                 		catch(e){
                 			console.log(e);
