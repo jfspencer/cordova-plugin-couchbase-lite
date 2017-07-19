@@ -157,23 +157,23 @@ module.exports.allDocs$ = function allDocs$(options) {
     var decoder = new TextDecoder('utf-8');
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
-                if (_.isEmpty(res)) subscriber.complete();
-                else {
                 	if(device.platform === "Android"){
                 		try{
-	                		subscriber.next(eval("(" + res + ")"));
-                		}
-                		catch(e){
+                			if (_.isEmpty(res)) subscriber.complete();
+                			else subscriber.next(eval("(" + res + ")"));
+            			}
+            			catch(e){
     						console.log(e);
-    						subscriber.next(null);
-                			var err = new Error('could not parse CBL allDocs');
-                			err.context = e;
-                			throw err;    						            		
-                		}
+							subscriber.next(null);
+            				var err = new Error('could not parse CBL allDocs');
+            				err.context = e;
+             				throw err;    						            		
+            			}
                 	}
                 	else if(device.platform === "iOS"){
                 		try{
-                			subscriber.next(JSON.parse(decoder.decode(new DataView(res))));
+                			if(_.isEqual("complete",res)) subscriber.complete();
+                			else subscriber.next(JSON.parse(decoder.decode(new DataView(res))));
                 		}
                 		catch(e){
                 			console.log(e);
@@ -183,7 +183,6 @@ module.exports.allDocs$ = function allDocs$(options) {
                 			throw err;
                 		}
                 	}
-                }
             },
             function (err) {subscriber.error(err);}, "CBLite", "allDocs", options);
     });

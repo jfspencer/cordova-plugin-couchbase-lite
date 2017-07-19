@@ -243,7 +243,7 @@ static NSThread *cblThread;
             }
         }
 
-        CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@""];
+        CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"complete"];
         [finalPluginResult setKeepCallbackAsBool:NO];
         [self.commandDelegate sendPluginResult:finalPluginResult callbackId:urlCommand.callbackId];
     });
