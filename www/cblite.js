@@ -164,9 +164,7 @@ module.exports.allDocs$ = function allDocs$(options) {
             			catch(e){
     						console.log(e);
 							subscriber.next(null);
-            				var err = new Error('could not parse CBL allDocs');
-            				err.context = e;
-             				throw err;    						            		
+            				throw new Error('could not parse CBL allDocs');
             			}
                 	}
                 	else if(device.platform === "iOS"){
@@ -182,9 +180,7 @@ module.exports.allDocs$ = function allDocs$(options) {
                 		catch(e){
                 			console.log(e);
                 			subscriber.next(null);
-                			var err = new Error('could not parse CBL allDocs');
-                			err.context = e;
-                			throw err;
+                			throw new Error('could not parse CBL allDocs');
                 		}
                 	}
             },
@@ -206,9 +202,7 @@ module.exports.get = function get(options) {
                 		catch(e){
     						console.log(e);
     						resolve(null);
-                			var err = new Error('could not parse CBL get');
-                			err.context = e;
-                			throw err;
+                			throw new Error('could not parse CBL get');
                 		}
                 	}
                 	else if(device.platform === "iOS"){
@@ -221,9 +215,7 @@ module.exports.get = function get(options) {
                 		catch(e){
                 			console.log(e);
                 			resolve(null);
-                			var err = new Error('could not parse CBL get');
-                			err.context = e;
-                			throw err;
+                			throw new Error('could not parse CBL get');
                 		}
                 	}
         	}, 
