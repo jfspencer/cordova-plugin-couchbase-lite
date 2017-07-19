@@ -266,8 +266,8 @@ static NSThread *cblThread;
                                                                                                          options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
                                                                                                            error:&error] encoding:NSUTF8StringEncoding]];
             }
-            NSString *response = [responseBuffer componentsJoinedByString:@","];
-            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"[%@]", response]];
+            CDVPluginResult* pluginResult =
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[[responseBuffer componentsJoinedByString:@","] dataUsingEncoding:NSUTF8StringEncoding]];
             [pluginResult setKeepCallbackAsBool:YES];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
@@ -279,26 +279,24 @@ static NSThread *cblThread;
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSString *id = [urlCommand.arguments objectAtIndex:1];
         NSString *isLocal = [urlCommand.arguments objectAtIndex:2];
-
+        NSError *error;
         if([isLocal isEqualToString:@"true"]){
             CBLJSONDict *doc = [dbs[dbName] existingLocalDocumentWithID: id];
             if(doc != nil){
-                NSError *error2;
                 @try {
-                    NSData *json = [NSJSONSerialization dataWithJSONObject:doc options:0 error:&error2];
                     CDVPluginResult* pluginResult =
-                    [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
+                    [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[NSJSONSerialization dataWithJSONObject:doc options:0 error:&error]];
                     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
                 }
                 @catch (NSException *exception) {
                     CDVPluginResult* pluginResult =
-                    [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"null"];
+                    [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[@"null" dataUsingEncoding:NSUTF8StringEncoding]];
                     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
                 }
             }
             else {
                 CDVPluginResult* pluginResult =
-                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString: @"null"];
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[@"null" dataUsingEncoding:NSUTF8StringEncoding]];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
         }
@@ -306,19 +304,17 @@ static NSThread *cblThread;
             CBLDocument *doc = [dbs[dbName] existingDocumentWithID: id];
             if(doc == nil){
                 CDVPluginResult* pluginResult =
-                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"null"];
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[@"null" dataUsingEncoding:NSUTF8StringEncoding]];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
             @try {
-                NSError *error2;
-                NSData *json = [NSJSONSerialization dataWithJSONObject:doc.properties options:0 error:&error2];
                 CDVPluginResult* pluginResult =
-                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]];
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[NSJSONSerialization dataWithJSONObject:doc.properties options:0 error:&error]];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
             @catch (NSException *exception) {
                 CDVPluginResult* pluginResult =
-                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"null"];
+                [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[@"null" dataUsingEncoding:NSUTF8StringEncoding]];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
         }

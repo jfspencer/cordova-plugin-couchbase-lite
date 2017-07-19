@@ -154,10 +154,36 @@ module.exports.sync = function sync(options) {
  * @returns allDocs:Rx<[docs...]>
  */
 module.exports.allDocs$ = function allDocs$(options) {
+    var decoder = new TextDecoder('utf-8');
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
                 if (_.isEmpty(res)) subscriber.complete();
-                else subscriber.next(eval("(" + res + ")"));
+                else {
+                	if(device.platform === "Android"){
+                		try{
+	                		subscriber.next(eval("(" + res + ")"));
+                		}
+                		catch(e){
+    						console.log(e);
+    						subscriber.next(null);
+                			var err = new Error('could not parse CBL allDocs');
+                			err.context = e;
+                			throw err;    						            		
+                		}
+                	}
+                	else if(device.platform === "iOS"){
+                		try{
+                			subscriber.next(JSON.parse(decoder.decode(new DataView(res))));
+                		}
+                		catch(e){
+                			console.log(e);
+                			subscriber.next(null);
+                			var err = new Error('could not parse CBL allDocs');
+                			err.context = e;
+                			throw err;
+                		}
+                	}
+                }
             },
             function (err) {subscriber.error(err);}, "CBLite", "allDocs", options);
     });
@@ -169,7 +195,36 @@ module.exports.allDocs$ = function allDocs$(options) {
  */
 module.exports.get = function get(options) {
     return new Promise(function (resolve, reject) {
-        exec(function (res) {resolve(eval("(" + res + ")"));}, function (err) {reject(err);}, "CBLite", "get", options);
+        exec(function (res) {
+        		if(device.platform === "Android"){
+                		try{
+			        		resolve(eval("(" + res + ")"));	                	
+                		}
+                		catch(e){
+    						console.log(e);
+    						resolve(null);
+                			var err = new Error('could not parse CBL get');
+                			err.context = e;
+                			throw err;
+                		}
+                	}
+                	else if(device.platform === "iOS"){
+                		try{
+                			var decoder = new TextDecoder('utf-8');
+                			resolve(JSON.parse(decoder.decode(new DataView(res))));
+                		}
+                		catch(e){
+                			console.log(e);
+                			resolve(null);
+                			var err = new Error('could not parse CBL get');
+                			err.context = e;
+                			throw err;
+                		}
+                	}
+        	}, 
+        	function (err) {
+        		reject(err);
+        	}, "CBLite", "get", options);
     });
 };
 
