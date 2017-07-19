@@ -154,7 +154,6 @@ module.exports.sync = function sync(options) {
  * @returns allDocs:Rx<[docs...]>
  */
 module.exports.allDocs$ = function allDocs$(options) {
-    var decoder = new TextDecoder('utf-8');
     return Rx.Observable.create(function (subscriber) {
         exec(function (res) {
                 	if(device.platform === "Android"){
@@ -173,7 +172,11 @@ module.exports.allDocs$ = function allDocs$(options) {
                 	else if(device.platform === "iOS"){
                 		try{
                 			if(_.isEqual("complete",res)) subscriber.complete();
-                			else subscriber.next(JSON.parse(decoder.decode(new DataView(res))));
+                			else {
+                				var dataView = new DataView(res);
+                        		var decoder = new TextDecoder('utf-8');
+                				subscriber.next(JSON.parse(decoder.decode(dataView)));
+                			}
                 		}
                 		catch(e){
                 			console.log(e);
@@ -209,8 +212,9 @@ module.exports.get = function get(options) {
                 	}
                 	else if(device.platform === "iOS"){
                 		try{
+                			var dataView = new DataView(res);
                 			var decoder = new TextDecoder('utf-8');
-                			resolve(JSON.parse(decoder.decode(new DataView(res))));
+                			resolve(JSON.parse(decoder.decode(dataView)));
                 		}
                 		catch(e){
                 			console.log(e);
