@@ -8,3 +8,5 @@ APIs/typescript/cblemitter.js
 .DS_Store
 
 tests/typeapp/
+
+typescript/cbl.js
