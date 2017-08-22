@@ -131,7 +131,7 @@ static NSThread *cblThread;
         if(dbs == nil){dbs = [NSMutableDictionary dictionary];}
         CBLDatabaseOptions *options = [[CBLDatabaseOptions alloc] init];
         options.create = YES;
-        options.storageType = kCBLForestDBStorage;
+        options.storageType = kCBLSQLiteStorage;
         dbs[dbName] = [dbmgr openDatabaseNamed:dbName withOptions:options error:&error];
         CDVPluginResult* pluginResult;
         if (!dbs[dbName]) pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Could not init DB"];

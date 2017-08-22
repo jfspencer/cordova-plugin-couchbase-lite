@@ -296,7 +296,7 @@ public class CBLite extends CordovaPlugin {
                     String dbName = args.getString(0);
                     DatabaseOptions options = new DatabaseOptions();
                     options.setCreate(true);
-                    options.setStorageType(Manager.FORESTDB_STORAGE);
+                    options.setStorageType(Manager.SQLITE_STORAGE);
                     dbs.put(dbName, dbmgr.openDatabase(dbName, options));
                     callback.success("CBL db init success");
                 } catch (final Exception e) {
