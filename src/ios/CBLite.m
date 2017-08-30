@@ -5,7 +5,6 @@
 #import "CBLListener.h"
 #import "CBLRegisterJSViewCompiler.h"
 #import "CBLReplication.h"
-#import "JobNimbus-Swift.h"
 
 #import <Cordova/CDV.h>
 
@@ -259,13 +258,10 @@ static NSThread *cblThread;
             batchQuery.keys = batch;
 
             NSError *queryError;
-            ExtensionWriter *callerIdWriter= [[ExtensionWriter alloc] init];
             CBLQueryEnumerator* batchResults = [batchQuery run: &queryError];
             NSMutableArray *responseBuffer = [[NSMutableArray alloc] init];
             for (CBLQueryRow* row in batchResults) {
                 NSError *error;
-                [callerIdWriter upsertData:row];
-
                 [responseBuffer addObject:[[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:row.documentProperties
                                                                                                          options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
                                                                                                            error:&error] encoding:NSUTF8StringEncoding]];
