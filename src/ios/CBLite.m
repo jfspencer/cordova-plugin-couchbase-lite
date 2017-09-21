@@ -129,10 +129,19 @@ static NSThread *cblThread;
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSError *error;
         if(dbs == nil){dbs = [NSMutableDictionary dictionary];}
-        CBLDatabaseOptions *options = [[CBLDatabaseOptions alloc] init];
-        options.create = YES;
-        options.storageType = kCBLForestDBStorage;
-        dbs[dbName] = [dbmgr openDatabaseNamed:dbName withOptions:options error:&error];
+
+        // Used to migrate away from forestDB after user re-installs app
+        Boolean exists = [dbmgr databaseExistsNamed:dbName];
+        if(exists){
+            CBLDatabaseOptions *options = [[CBLDatabaseOptions alloc] init];
+            dbs[dbName] = [dbmgr openDatabaseNamed:dbName withOptions:options error:&error];
+        }
+        else {
+            CBLDatabaseOptions *options = [[CBLDatabaseOptions alloc] init];
+            options.create = YES;
+            options.storageType = kCBLSQLiteStorage;
+            dbs[dbName] = [dbmgr openDatabaseNamed:dbName withOptions:options error:&error];
+        }
         CDVPluginResult* pluginResult;
         if (!dbs[dbName]) pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Could not init DB"];
         else pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"CBL db init success"];
