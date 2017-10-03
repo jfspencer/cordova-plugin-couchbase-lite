@@ -33,8 +33,8 @@ static NSThread *cblThread;
          queue: nil
          usingBlock: ^(NSNotification *n) {
              NSArray* changes = n.userInfo[@"changes"];
-             long lastSeq = [dbs[dbName] lastSequenceNumber];
              for (CBLDatabaseChange* change in changes){
+                 long lastSeq = [dbs[dbName] lastSequenceNumber];
                  CDVPluginResult* pluginResult =
                  [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                   messageAsString:[NSString stringWithFormat:@"{\"id\":\"%@\",\"is_delete\":%@,\"seq_num\":%ld}", change.documentID, change.isDeletion? @"true":@"false",lastSeq]];
