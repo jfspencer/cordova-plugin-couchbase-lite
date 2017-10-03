@@ -181,8 +181,8 @@ public class CBLite extends CordovaPlugin {
                             @Override
                             public void changed(Database.ChangeEvent event) {
                                 List<DocumentChange> changes = event.getChanges();
-                                long lastSequence = dbs.get(dbName).getLastSequenceNumber();
                                 for (DocumentChange change : changes) {
+                                    long lastSequence = dbs.get(dbName).getLastSequenceNumber();
                                     PluginResult result = new PluginResult(PluginResult.Status.OK,
                                             "{\"id\":" + "\"" + change.getDocumentId() + "\"" + ",\"is_delete\":" + change.isDeletion() + ",\"seq_num\":" + lastSequence + "}");
                                     result.setKeepCallback(true);
