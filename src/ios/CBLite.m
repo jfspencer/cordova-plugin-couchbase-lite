@@ -369,12 +369,15 @@ static NSThread *cblThread;
 
             NSData *data = [[NSFileManager defaultManager] contentsAtPath:filePath];
 
-            [newRev setAttachmentNamed: name
-                       withContentType: mime
-                               content: data];
-            assert([newRev save: &error]);
+            @try{
+                [newRev setAttachmentNamed: name
+                           withContentType: mime
+                                   content: data];
+                [newRev save: &error];
+            }
+            @catch(NSException *e){}
 
-            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"attachment save success"];
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"finished with success or failure"];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
     });
