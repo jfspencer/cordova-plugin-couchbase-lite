@@ -241,6 +241,18 @@ module.exports.putAttachment = function putAttachment(options) {
     });
 };
 
+module.exports.attachmentCount = function attachmentCount(options) {
+    return new Promise(function (resolve, reject) {
+        exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBLite", "attachmentCount", options);
+    });
+};
+
+module.exports.uploadLogs = function uploadLogs(options) {
+    return new Promise(function (resolve, reject) {
+        exec(function (res) {resolve(res);}, function (err) {reject(err);}, "CBLite", "uploadLogs", options);
+    });
+};
+
 //creates or updates a document requires a doc id to present, input data will always be written as winning revision
 /**
  * @param options:[dbName:string, docId:string, jsonString:string, isLocal:boolean]
