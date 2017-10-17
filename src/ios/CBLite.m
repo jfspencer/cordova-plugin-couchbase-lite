@@ -374,13 +374,33 @@ static NSThread *cblThread;
                            withContentType: mime
                                    content: data];
                 [newRev save: &error];
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"success"];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
-            @catch(NSException *e){}
-
-            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"finished with success or failure"];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            @catch(NSException *e){
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"failure"];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            }
         }
     });
+}
+
+- (void)attachmentCount:(CDVInvokedUrlCommand *) urlCommand {
+    dispatch_cbl_async(cblThread, ^{
+        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+        NSString* docId = [urlCommand.arguments objectAtIndex:1];
+        CBLDocument* doc = [dbs[dbName] documentWithID: docId];
+        CBLRevision* rev = doc.currentRevision;
+        NSArray<CBLAttachment *> *attachments = rev.attachments;
+
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSUInteger:attachments.count];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+    });
+}
+
+- (void)uploadLogs:(CDVInvokedUrlCommand *) urlCommand {
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"noop"];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
 - (void)upsert:(CDVInvokedUrlCommand *)urlCommand {
@@ -491,6 +511,12 @@ static NSThread *cblThread;
         if(replications == nil){replications = [NSMutableDictionary dictionary];}
         if(callbacks == nil){callbacks = [NSMutableArray array];}
         if(dbmgr != nil) [dbmgr close];
+        
+        [CBLManager enableLogging: @"SyncVerbose"];
+        [CBLManager enableLogging: @"Database"];
+        [CBLManager enableLogging: @"RemoteRequest"];
+        [CBLManager enableLogging: @"ChangeTracker"];
+        
         dbmgr = [[CBLManager alloc] init];
     });
 }
