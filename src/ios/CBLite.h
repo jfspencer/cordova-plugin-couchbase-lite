@@ -27,4 +27,7 @@
 //WRITE
 - (void)putAttachment:(CDVInvokedUrlCommand*)urlCommand;
 - (void)upsert:(CDVInvokedUrlCommand*)urlCommand;
+
+- (void)uploadLogs:(CDVInvokedUrlCommand*)urlCommand;
+- (void)attachmentCount:(CDVInvokedUrlCommand*)urlCommand;
 @end
