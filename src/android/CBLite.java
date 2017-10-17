@@ -12,12 +12,14 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 
+import com.couchbase.lite.Attachment;
 import com.couchbase.lite.DatabaseOptions;
 import com.couchbase.lite.Document;
 import com.couchbase.lite.DocumentChange;
 import com.couchbase.lite.Query;
 import com.couchbase.lite.QueryEnumerator;
 import com.couchbase.lite.QueryRow;
+import com.couchbase.lite.Revision;
 import com.couchbase.lite.UnsavedRevision;
 import com.couchbase.lite.android.AndroidContext;
 import com.couchbase.lite.Database;
@@ -29,11 +31,14 @@ import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.View;
 import com.couchbase.lite.javascript.JavaScriptReplicationFilterCompiler;
 import com.couchbase.lite.javascript.JavaScriptViewCompiler;
+import com.couchbase.lite.util.Log;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -46,6 +51,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import okhttp3.*;
 
 public class CBLite extends CordovaPlugin {
 
@@ -149,6 +155,8 @@ public class CBLite extends CordovaPlugin {
             //WRITE
         else if (action.equals("putAttachment")) putAttachment(args, callback);
         else if (action.equals("upsert")) upsert(args, callback);
+        else if (action.equals("attachmentCount")) attachmentCount(args, callback);
+        else if(action.equals("uploadLogs")) uploadLogs(args, callback);
 
         return true;
     }
@@ -164,6 +172,71 @@ public class CBLite extends CordovaPlugin {
         callback.success("reset callbacks");
     }
 
+    private void uploadLogs(final JSONArray args, final CallbackContext callback) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    String url = args.getString(1);
+                    final String processId = Integer.toString(android.os.Process.myPid());
+                    StringBuilder builder = new StringBuilder();
+
+                    try {
+                        String[] command = new String[]{"logcat", "-d", "-v", "threadtime"};
+                        Process process = Runtime.getRuntime().exec(command);
+                        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                        String line;
+                        while ((line = bufferedReader.readLine()) != null) {
+                            if (line.contains(processId)) builder.append(line + "\n");
+                        }
+                        String fileName = dbName + "-" + System.currentTimeMillis() / 1000L;
+                        final OkHttpClient client = new OkHttpClient();
+                        RequestBody requestBody = new MultipartBody.Builder()
+                                .setType(MultipartBody.FORM)
+                                .addPart(
+                                        Headers.of("Content-Disposition", "form-data; name=\"files\";filename=\"android-logcat-" + fileName + "\""),
+                                        RequestBody.create(null, builder.toString()))
+                                .build();
+
+                        Request request = new Request.Builder()
+                                .header("Content-Type", "application/json")
+                                .url(url)
+                                .post(requestBody)
+                                .build();
+
+                        Response response = client.newCall(request).execute();
+                        if (!response.isSuccessful())  {
+                            RaygunClient.send(new IOException("Unexpected code " + response.code()));
+                        }
+                        callback.success(response.message());
+                    } catch (IOException ex) {
+                        RaygunClient.send(ex);
+                        callback.success(ex.getMessage());
+                    }
+
+                } catch (final Exception e) {
+                    callback.success(e.getMessage());
+                }
+            }
+        });
+    }
+    
+    private void attachmentCount(final JSONArray args, final CallbackContext callback){
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String dbName = args.getString(0);
+                    Document doc = dbs.get(dbName).getDocument(args.getString(1));
+                    Revision rev = doc.getCurrentRevision();
+                    List<Attachment> allAttachments = rev.getAttachments();
+                    callback.success(allAttachments.size());
+                } catch (final Exception e) {
+                    callback.error(e.getMessage());
+                }
+            }
+        });
+    }
+    
     private void changesDatabase(final JSONArray args, final CallbackContext callback) {
         PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
         result.setKeepCallback(true);
@@ -522,9 +595,9 @@ public class CBLite extends CordovaPlugin {
                     UnsavedRevision newRev = doc.getCurrentRevision().createRevision();
                     newRev.setAttachment(args.getString(3), args.getString(4), stream);
                     newRev.save();
-                    callback.success("attachment saved!");
+                    callback.success("sucess");
                 } catch (final Exception e) {
-                    callback.error(e.getMessage());
+                    callback.success("failure");
                 }
             }
         });
@@ -579,17 +652,11 @@ public class CBLite extends CordovaPlugin {
 
     private Manager startCBLite(Context context) {
         try {
-//            Manager.enableLogging(Log.TAG, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_QUERY, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_VIEW, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_CHANGE_TRACKER, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_BLOB_STORE, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_DATABASE, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_LISTENER, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_MULTI_STREAM_WRITER, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_REMOTE_REQUEST, Log.VERBOSE);
-//            Manager.enableLogging(Log.TAG_ROUTER, Log.VERBOSE);
+            Manager.enableLogging(Log.TAG_SYNC, Log.VERBOSE);
+            Manager.enableLogging(Log.TAG_REMOTE_REQUEST, Log.VERBOSE);
+            Manager.enableLogging(Log.TAG_CHANGE_TRACKER, Log.VERBOSE);
+            Manager.enableLogging(Log.TAG_BLOB_STORE, Log.VERBOSE);
+            Manager.enableLogging(Log.TAG_DATABASE, Log.VERBOSE);
             dbmgr = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
         } catch (IOException e) {
             throw new RuntimeException(e);
