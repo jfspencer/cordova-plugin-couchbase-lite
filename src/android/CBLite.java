@@ -52,6 +52,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.*;
+import main.java.com.mindscapehq.android.raygun4android.RaygunClient;
 
 public class CBLite extends CordovaPlugin {
 
