@@ -1,3 +1,5 @@
+# NO LONGER MAINTAINED, REQUIRES UNDOCUMENTED DEPENDENCIES, USE AS REFERENCE MATERIAL ONLY
+
 # Cordova-Plugin-Couchbase-Lite
 Couchbase Lite Cordova plugin that provides a standard cordova interface instead of relying on the 
  built in REST Server or another HTTP API layer. The native implementations run on their own
