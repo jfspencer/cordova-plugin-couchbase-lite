@@ -387,14 +387,22 @@ static NSThread *cblThread;
 
 - (void)attachmentCount:(CDVInvokedUrlCommand *) urlCommand {
     dispatch_cbl_async(cblThread, ^{
-        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
-        NSString* docId = [urlCommand.arguments objectAtIndex:1];
-        CBLDocument* doc = [dbs[dbName] documentWithID: docId];
-        CBLRevision* rev = doc.currentRevision;
-        NSArray<CBLAttachment *> *attachments = rev.attachments;
+        @try{
+            NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+            NSString* docId = [urlCommand.arguments objectAtIndex:1];
+            CBLDocument* doc = [dbs[dbName] documentWithID: docId];
+            CBLRevision* rev = doc.currentRevision;
+            NSArray<CBLAttachment *> *attachments = rev.attachments;
 
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSUInteger:attachments.count];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSUInteger:attachments.count];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
+        @catch(NSException *e){
+            [e name];
+            [[Raygun sharedReporter] send:e];
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"attachmentCount Exception: %@, Reason:%@", [e name], [e reason]]];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
     });
 }
 
