@@ -181,16 +181,19 @@ public class CBLite extends CordovaPlugin {
                     final String processId = Integer.toString(android.os.Process.myPid());
                     StringBuilder builder = new StringBuilder();
 
+                    BufferedReader bufferedReader;
+
                     try {
                         String[] command = new String[]{"logcat", "-d", "-v", "threadtime"};
                         Process process = Runtime.getRuntime().exec(command);
-                        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                        bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                         String line;
                         while ((line = bufferedReader.readLine()) != null) {
                             if (line.contains(processId)) builder.append(line + "\n");
                         }
                         String fileName = dbName + "-" + System.currentTimeMillis() / 1000L;
                         final OkHttpClient client = new OkHttpClient();
+                        
                         RequestBody requestBody = new MultipartBody.Builder()
                                 .setType(MultipartBody.FORM)
                                 .addPart(
@@ -208,12 +211,14 @@ public class CBLite extends CordovaPlugin {
                         if (!response.isSuccessful())  {
                             RaygunClient.send(new IOException("Unexpected code " + response.code()));
                         }
+                        bufferedReader.close();
+                        process.destroy();
+                        response.close();
                         callback.success(response.message());
                     } catch (Exception ex) {
                         RaygunClient.send(ex);
                         callback.success(ex.getMessage());
                     }
-
                 } catch (final Exception e) {
                     RaygunClient.send(e);
                     callback.success(e.getMessage());
