@@ -209,12 +209,13 @@ public class CBLite extends CordovaPlugin {
                             RaygunClient.send(new IOException("Unexpected code " + response.code()));
                         }
                         callback.success(response.message());
-                    } catch (IOException ex) {
+                    } catch (Exception ex) {
                         RaygunClient.send(ex);
                         callback.success(ex.getMessage());
                     }
 
                 } catch (final Exception e) {
+                    RaygunClient.send(e);
                     callback.success(e.getMessage());
                 }
             }
@@ -231,7 +232,8 @@ public class CBLite extends CordovaPlugin {
                     List<Attachment> allAttachments = rev.getAttachments();
                     callback.success(allAttachments.size());
                 } catch (final Exception e) {
-                    callback.error(e.getMessage());
+                    RaygunClient.send(e);
+                    callback.success(e.getMessage());
                 }
             }
         });
