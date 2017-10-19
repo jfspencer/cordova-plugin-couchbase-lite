@@ -398,8 +398,6 @@ static NSThread *cblThread;
             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
         @catch(NSException *e){
-            [e name];
-            [[Raygun sharedReporter] send:e];
             CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"attachmentCount Exception: %@, Reason:%@", [e name], [e reason]]];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
