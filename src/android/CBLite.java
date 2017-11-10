@@ -605,7 +605,7 @@ public class CBLite extends CordovaPlugin {
                     newRev.save();
                     callback.success("sucess");
                 } catch (final Exception e) {
-                    callback.success("failure");
+                    callback.error("putAttachment failure");
                 }
             }
         });
