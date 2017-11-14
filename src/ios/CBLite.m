@@ -5,7 +5,7 @@
 #import "CBLListener.h"
 #import "CBLRegisterJSViewCompiler.h"
 #import "CBLReplication.h"
-
+#import <Raygun4iOS/Raygun.h>
 #import <Cordova/CDV.h>
 
 @implementation CBLite
