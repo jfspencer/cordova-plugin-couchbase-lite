@@ -271,9 +271,21 @@ static NSThread *cblThread;
             NSMutableArray *responseBuffer = [[NSMutableArray alloc] init];
             for (CBLQueryRow* row in batchResults) {
                 NSError *error;
-                [responseBuffer addObject:[[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:row.documentProperties
-                                                                                                         options:0 //NSJSONWritingPrettyPrinted // Pass 0 if you don't care about the readability
-                                                                                                           error:&error] encoding:NSUTF8StringEncoding]];
+                @try{
+                    NSData *data = [NSJSONSerialization dataWithJSONObject:row.documentProperties
+                                                                   options:0 //or NSJSONWritingPrettyPrinted
+                                                                     error:&error];
+                    [responseBuffer addObject:[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]];
+                }
+                @catch(NSException *e){
+                    NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:
+                                          [row documentID], @"id",
+                                          [row documentRevisionID], @"rev",
+                                          [error localizedDescription], @"description",
+                                          [error localizedFailureReason], @"cause",
+                                          nil];
+                    [[Raygun sharedReporter] send:[e reason] withReason:@"iOS failure to serialize doc props" withTags:nil withUserCustomData:dict];
+                }
             }
 
             CDVPluginResult* pluginResult =
