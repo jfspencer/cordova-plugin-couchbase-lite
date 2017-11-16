@@ -72,11 +72,11 @@
     <source-file src="lib/android/couchbase-lite-java-core-1.4.1.jar" target-dir="libs"/>
     <source-file src="lib/android/couchbase-lite-java-javascript-1.4.1.jar" target-dir="libs"/>
     <source-file src="lib/android/couchbase-lite-java-listener-1.4.1.jar" target-dir="libs"/>
-    <source-file src="lib/android/okhttp-3.3.1.jar" target-dir="libs"/>
-    <source-file src="lib/android/okio-1.8.0.jar" target-dir="libs"/>
     <source-file src="lib/android/rhino-1.7R3.jar" target-dir="libs"/>
     <source-file src="lib/android/servlet-2-3.jar" target-dir="libs"/>
     <source-file src="lib/android/stateless4j-2.4.0.jar" target-dir="libs"/>
+	<framework src="com.squareup.okhttp3:okhttp:3.3.1"/>
+	<framework src="com.squareup.okio:okio:1.8.0"/>
     <framework src="com.fasterxml.jackson.core:jackson-annotations:2.5.3"/>
     <framework src="com.fasterxml.jackson.core:jackson-core:2.5.3"/>
     <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
