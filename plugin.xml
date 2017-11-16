@@ -30,10 +30,7 @@
     <header-file src="lib/ios/CBLRegisterJSViewCompiler.h"/>
     <source-file framework="true" src="lib/ios/libCBLJSViewCompiler.a"/>
     <source-file framework="true" src="lib/ios/CouchbaseLite.framework/CouchbaseLite.a"/>
-    <source-file framework="true" src="lib/ios/libCBLForestDBStorage.a"/>
     <source-file framework="true" src="lib/ios/CouchbaseLiteListener.framework/CouchbaseLiteListener.a"/>
-    <header-file src="lib/ios/CouchbaseLiteListener.framework/Headers/CBLListener.h"/>
-    <header-file src="lib/ios/CouchbaseLiteListener.framework/Headers/CouchbaseLiteListener.h"/>
     <header-file src="lib/ios/CouchbaseLite.framework/Headers/CBLAttachment.h"/>
     <header-file src="lib/ios/CouchbaseLite.framework/Headers/CBLAuthenticator+OpenID.h"/>
     <header-file src="lib/ios/CouchbaseLite.framework/Headers/CBLAuthenticator.h"/>
@@ -56,6 +53,9 @@
     <header-file src="lib/ios/CouchbaseLite.framework/Headers/CBLUITableSource.h"/>
     <header-file src="lib/ios/CouchbaseLite.framework/Headers/CBLView.h"/>
     <header-file src="lib/ios/CouchbaseLite.framework/Headers/CouchbaseLite.h"/>
+    <header-file src="lib/ios/CouchbaseLiteListener.framework/Headers/CBLListener.h"/>
+    <header-file src="lib/ios/CouchbaseLiteListener.framework/Headers/CouchbaseLiteListener.h"/>
+	<source-file framework="true" src="lib/ios/libCBLForestDBStorage.a"/>
   </platform>
   <platform name="android">
     <config-file target="res/xml/config.xml" parent="/*">
@@ -67,21 +67,21 @@
     <framework src="src/android/build.gradle" custom="true" type="gradleReference"/>
     <source-file src="src/android/CBLite.java" target-dir="src/com/couchbase/cblite/phonegap"/>
     <source-file src="lib/android/commons-io-2.0.1.jar" target-dir="libs"/>
-    <resource-file src="lib/android/couchbase-lite-android-1.4.0.aar" target="libs/couchbase-lite-android-1.4.0.aar"/>
-    <source-file src="lib/android/couchbase-lite-java-javascript-1.4.0.jar" target-dir="libs"/>
-    <source-file src="lib/android/couchbase-lite-java-core-1.4.0.jar" target-dir="libs"/>
-    <resource-file src="lib/android/couchbase-lite-android-sqlite-custom-1.4.0.aar" target="libs/couchbase-lite-android-sqlite-custom-1.4.0.aar"/>
-    <resource-file src="lib/android/couchbase-lite-android-forestdb-1.4.0.aar" target="libs/couchbase-lite-android-forestdb-1.4.0.aar"/>
-    <source-file src="lib/android/couchbase-lite-java-listener-1.4.0.jar" target-dir="libs"/>
+    <resource-file src="lib/android/couchbase-lite-android-1.4.1.aar" target="libs/couchbase-lite-android-1.4.1.aar"/>
+    <resource-file src="lib/android/couchbase-lite-android-sqlite-custom-1.4.1.aar" target="libs/couchbase-lite-android-sqlite-custom-1.4.1.aar"/>
+    <source-file src="lib/android/couchbase-lite-java-core-1.4.1.jar" target-dir="libs"/>
+    <source-file src="lib/android/couchbase-lite-java-javascript-1.4.1.jar" target-dir="libs"/>
+    <source-file src="lib/android/couchbase-lite-java-listener-1.4.1.jar" target-dir="libs"/>
+    <source-file src="lib/android/okhttp-3.3.1.jar" target-dir="libs"/>
+    <source-file src="lib/android/okio-1.8.0.jar" target-dir="libs"/>
     <source-file src="lib/android/rhino-1.7R3.jar" target-dir="libs"/>
     <source-file src="lib/android/servlet-2-3.jar" target-dir="libs"/>
     <source-file src="lib/android/stateless4j-2.4.0.jar" target-dir="libs"/>
-    <framework src="com.squareup.okhttp3:okhttp:3.3.1"/>
-    <framework src="com.squareup.okio:okio:1.8.0"/>
     <framework src="com.fasterxml.jackson.core:jackson-annotations:2.5.3"/>
     <framework src="com.fasterxml.jackson.core:jackson-core:2.5.3"/>
     <framework src="com.fasterxml.jackson.core:jackson-databind:2.5.3"/>
     <framework src="com.fasterxml.jackson.module:jackson-module-afterburner:2.5.3"/>
     <framework src="org.apache.commons:commons-collections4:4.1"/>
+	<resource-file src="lib/android/couchbase-lite-android-forestdb-1.4.1.aar" target="libs/couchbase-lite-android-forestdb-1.4.1.aar"/>
   </platform>
 </plugin>
