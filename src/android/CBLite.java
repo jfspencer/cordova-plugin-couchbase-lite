@@ -503,7 +503,17 @@ public class CBLite extends CordovaPlugin {
 
                                     for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
                                         QueryRow row = it.next();
-                                        responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
+                                        try {
+                                            HashMap<String, Object> data = new HashMap<String, Object>();
+                                            data.putAll(row.asJSONDictionary());
+                                            responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
+                                        }
+                                        catch(Exception e){
+                                            HashMap<String, String> extraData = new HashMap<String, String>();
+                                            extraData.put("id",row.getDocumentId());
+                                            extraData.put("rev",row.getDocumentRevisionId());
+                                            RaygunClient.send(e,null, extraData);
+                                        }
                                     }
                                     PluginResult result = new PluginResult(PluginResult.Status.OK, "[" + TextUtils.join(",", responseBuffer) + "]");
                                     result.setKeepCallback(true);
