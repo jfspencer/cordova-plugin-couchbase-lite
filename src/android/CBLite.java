@@ -504,8 +504,6 @@ public class CBLite extends CordovaPlugin {
                                     for (Iterator<QueryRow> it = allDocsQuery; it.hasNext(); ) {
                                         QueryRow row = it.next();
                                         try {
-                                            HashMap<String, Object> data = new HashMap<String, Object>();
-                                            data.putAll(row.asJSONDictionary());
                                             responseBuffer.add(mapper.writeValueAsString(row.asJSONDictionary()));
                                         }
                                         catch(Exception e){
