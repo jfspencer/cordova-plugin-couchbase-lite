@@ -1,12 +1,17 @@
 #import "CBLite.h"
 
+#import "JobNimbus-Swift.h"
+
 #import "CouchbaseLite.h"
 #import "CBLManager.h"
 #import "CBLListener.h"
 #import "CBLRegisterJSViewCompiler.h"
 #import "CBLReplication.h"
-#import <Raygun4iOS/Raygun.h>
+@import CallKit;
 #import <Cordova/CDV.h>
+#import <Raygun4iOS/Raygun.h>
+#import <os/activity.h>
+#import <os/log.h>
 
 @implementation CBLite
 
@@ -14,8 +19,14 @@ static NSMutableDictionary *dbs;
 static NSMutableDictionary *replications;
 static NSMutableArray *callbacks;
 
+static CBLReplication *pushPrimary;
+static CBLReplication *pushMedia;
+
 static CBLManager *dbmgr;
 static NSThread *cblThread;
+static ExtensionWriter *extWriter;
+
+static os_log_t cbl_log;
 
 #pragma mark UTIL
 - (void)changesDatabase:(CDVInvokedUrlCommand *)urlCommand {
@@ -119,12 +130,54 @@ static NSThread *cblThread;
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         CBLDatabase *db = dbs[dbName];
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSUInteger:db.documentCount];
+        
+        //check database engine type package contains files with .forest
+        NSFileManager *filemgr = [NSFileManager defaultManager];
+        NSArray<NSURL *> *paths = [filemgr URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask];
+        NSURL *appSupportURL = paths[0];
+        NSURL *cblBaseURL = [appSupportURL URLByAppendingPathComponent:@"CouchbaseLite"];
+        NSURL *dbURL = [cblBaseURL URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.cblite2",dbName]];
+        
+        NSError *error;
+        NSFileWrapper *cblDb = [[NSFileWrapper alloc] initWithURL:dbURL options:NSFileWrapperReadingImmediate error:&error];
+        NSDictionary *cblDbContents = [cblDb fileWrappers];
+        NSFileWrapper *sqliteDb = cblDbContents[@"db.sqlite3"];
+        
+        NSString *isSqlite = nil;
+        if (sqliteDb != nil) { isSqlite = @"true"; }
+        else { isSqlite = @"false"; }
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                          messageAsString:
+                                         [NSString stringWithFormat:@"{\"count\":%lu,\"isSqlite\":\"%@\"}", db.documentCount, isSqlite]];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     });
 }
 
+- (void) initCallerID:(CDVInvokedUrlCommand *)urlCommand {
+    os_log_debug(cbl_log, "start initCallerID");
+    
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    extWriter = [[ExtensionWriter alloc] init];
+    [extWriter initCallerIdDb:dbName];
+    
+    [[CXCallDirectoryManager sharedInstance]
+     getEnabledStatusForExtensionWithIdentifier:@"com.jobnimbus.JobNimbus2.CallerID"
+     completionHandler:^(CXCallDirectoryEnabledStatus enabledStatus, NSError * _Nullable error) {
+         NSString *hasCallerId = nil;
+         if(enabledStatus == CXCallDirectoryEnabledStatusEnabled){ hasCallerId = @"true"; }
+         else {hasCallerId = @"false";}
+         
+         
+         
+         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                           messageAsString:
+                                          [NSString stringWithFormat:@"{\"callerIdEnabled\":\"%@\"}", hasCallerId]];
+         [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+     }];
+}
+
 - (void)initDb:(CDVInvokedUrlCommand *)urlCommand {
+    os_log_debug(cbl_log, "initDb: enter -----------------------------------------------");
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         NSError *error;
@@ -140,11 +193,99 @@ static NSThread *cblThread;
             CBLDatabaseOptions *options = [[CBLDatabaseOptions alloc] init];
             options.create = YES;
             options.storageType = kCBLSQLiteStorage;
+            os_log_debug(cbl_log, "initDb: start openDatabaseNamed... -----------------------------------------------");
             dbs[dbName] = [dbmgr openDatabaseNamed:dbName withOptions:options error:&error];
         }
+        
+        CBLView* primaryRecordView = [dbs[dbName] viewNamed: @"primaryRecord"];
+        [primaryRecordView setMapBlock: MAPBLOCK({
+            if ([doc[@"type"] isEqual: @"contact"]) {
+                //(@{@"_id":doc[@"_id"], @"type":doc[@"type"], @"status_name":doc[@"status_name"], @"first_name":doc[@"first_name"], @"last_name":doc[@"last_name"], @"owners":doc[@"owners"]}))
+                emit(@"contact", @"");
+            }
+            else if([doc[@"type"] isEqual: @"job"]) {
+                //(@{@"_id":doc[@"_id"], @"type":doc[@"type"], @"status_name":doc[@"status_name"], @"name":doc[@"name"], @"owners":doc[@"owners"]})
+                emit(@"job", @"");
+            }
+            
+            else if([doc[@"type"] isEqual: @"task"]) {
+                //(@{@"_id":doc[@"_id"], @"type":doc[@"type"], @"title":doc[@"title"], @"date_start":doc[@"date_start"], @"date_end":doc[@"date_end"]})
+                emit(@"task", @"");
+            }
+        }) version: @"4"];
+        
         CDVPluginResult* pluginResult;
         if (!dbs[dbName]) pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Could not init DB"];
         else pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"CBL db init success"];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+    });
+}
+
+- (void)startPushReplication:(CDVInvokedUrlCommand *)urlCommand {
+    NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+    NSString* syncURL = [urlCommand.arguments objectAtIndex:1];
+    NSString* user = [urlCommand.arguments objectAtIndex:2];
+    NSString* pass = [urlCommand.arguments objectAtIndex:3];
+
+    pushPrimary = [dbs[dbName] createPushReplication: [NSURL URLWithString: syncURL]];
+    pushMedia = [dbs[[NSString stringWithFormat:@"%@%@", dbName, @"_media"]] createPushReplication:[NSURL URLWithString: syncURL]];
+
+    pushPrimary.continuous = pushMedia.continuous = NO;
+
+    id<CBLAuthenticator> auth;
+    auth = [CBLAuthenticator basicAuthenticatorWithName: user
+                                               password: pass];
+    pushPrimary.authenticator = pushMedia.authenticator = auth;
+
+    [pushPrimary start]; [pushMedia start];
+
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsNSUInteger:[dbs[dbName] lastSequenceNumber]];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
+- (void)pushReplicationIsRunning:(CDVInvokedUrlCommand *)urlCommand {
+    BOOL primaryIsRunning = NO;
+    BOOL mediaIsRunning = NO;
+    if(pushPrimary){ primaryIsRunning = pushPrimary.running; }
+    if(pushMedia){ mediaIsRunning = pushMedia.running; }
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:primaryIsRunning || mediaIsRunning];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+}
+
+- (void)deleteUserDbs:(CDVInvokedUrlCommand *) urlCommand {
+    dispatch_cbl_async(cblThread, ^{
+        NSString *dbName = [urlCommand.arguments objectAtIndex:0];
+
+        //close and clean up primary and media databases
+        for (NSString *cbId in callbacks){
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+            [pluginResult setKeepCallbackAsBool:NO];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:cbId];
+        }
+
+        [callbacks removeAllObjects];
+        [self onReset];
+        [dbmgr close];
+
+        //delete primary and media database files
+        NSFileManager *filemgr = [NSFileManager defaultManager];
+        NSArray<NSURL *> *paths = [filemgr URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask];
+        NSURL *appSupportURL = paths[0];
+        NSURL *cblBaseURL = [appSupportURL URLByAppendingPathComponent:@"CouchbaseLite"];
+        NSURL *dbPrimaryURL = [cblBaseURL URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.cblite2",dbName]];
+        NSURL *dbMediaURL = [cblBaseURL URLByAppendingPathComponent:[NSString stringWithFormat:@"%@_media.cblite2",dbName]];
+
+        NSError *error;
+        [filemgr removeItemAtURL:dbPrimaryURL error:&error];
+
+        NSError *mediaError;
+        [filemgr removeItemAtURL:dbMediaURL error:&mediaError];
+
+        //restart cbl on a new thread, new manager
+        pushMedia = nil;
+        pushPrimary = nil;
+        [self launchCouchbaseLite];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"success"];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
     });
 }
@@ -212,10 +353,101 @@ static NSThread *cblThread;
 }
 
 #pragma mark READ
+
+
+
+- (void)buildViewDocs:(CDVInvokedUrlCommand *)urlCommand {
+    dispatch_cbl_async(cblThread, ^{
+        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+        CBLQuery* query = [[dbs[dbName] viewNamed: @"primaryRecord"] createQuery];
+        query.keys = @[@"job"];
+        query.prefetch = YES;
+        query.indexUpdateMode = kCBLUpdateIndexAfter;
+        
+        NSError *idQueryError;
+        CBLQueryEnumerator* queryRunner = [query run: &idQueryError];
+        
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                          messageAsString: @"done"];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+    });
+}
+
+- (void)viewDocs:(CDVInvokedUrlCommand *)urlCommand {
+    dispatch_cbl_async(cblThread, ^{
+        //keep the plugin open for additional call backs
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+        [pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        
+        //pull out input params
+        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+        NSString* type = [urlCommand.arguments objectAtIndex:1] != nil ? [urlCommand.arguments objectAtIndex:1] : @"";
+        
+        //create a query
+        CBLQuery* query = [[dbs[dbName] viewNamed: @"primaryRecord"] createQuery];
+        query.keys = @[type];
+        query.prefetch = YES;
+        query.indexUpdateMode = kCBLUpdateIndexAfter;
+        
+        NSError *idQueryError;
+        int batchSize = 500;
+        NSMutableArray *queryDocs = [NSMutableArray array];
+        CBLQueryEnumerator* queryRunner = [query run: &idQueryError];
+        for (CBLQueryRow* row in queryRunner) {
+            
+            @autoreleasepool { [queryDocs addObject:row.documentProperties]; }
+        }
+        
+        NSUInteger remainingIds = [queryDocs count];
+        int j = 0;
+        
+        while(remainingIds){
+            @autoreleasepool {
+                NSRange batchRange = NSMakeRange(j, MIN(batchSize, remainingIds));
+                NSArray *batch = [queryDocs subarrayWithRange: batchRange];
+                @autoreleasepool{ [self processViewBatch:batch withUrlCommand:urlCommand onDatabase:dbName]; }
+                remainingIds -= batchRange.length;
+                j += batchRange.length;
+            }
+        }
+        
+        CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"complete"];
+        [finalPluginResult setKeepCallbackAsBool:NO];
+        [self.commandDelegate sendPluginResult:finalPluginResult callbackId:urlCommand.callbackId];
+    });
+}
+
+- (void) processViewBatch:(NSArray *) batch withUrlCommand:(CDVInvokedUrlCommand *) urlCommand onDatabase:(NSString *)dbName {
+    dispatch_cbl_async(cblThread, ^{
+        @autoreleasepool{
+            NSMutableArray *responseBuffer = [[NSMutableArray alloc] init];
+            for (CBLJSONDict* props in batch) {
+                NSError *error;
+                @try{
+                    //TODO read row.doc props send raygun when nil
+                    NSData *data = [NSJSONSerialization dataWithJSONObject:props
+                                                                   options:0 //or NSJSONWritingPrettyPrinted
+                                                                     error:&error];
+                    [responseBuffer addObject:[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]];
+                }
+                @catch(NSException *e){
+                    os_log_debug(cbl_log, "failed to read data row");
+                }
+            }
+            CDVPluginResult* pluginResult =
+            [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArrayBuffer:[[NSString stringWithFormat:@"[%@]", [responseBuffer componentsJoinedByString:@","]] dataUsingEncoding:NSUTF8StringEncoding]];
+            [pluginResult setKeepCallbackAsBool:YES];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
+    });
+}
+
 - (void)allDocs:(CDVInvokedUrlCommand *)urlCommand {
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
     [pluginResult setKeepCallbackAsBool:YES];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+
     dispatch_cbl_async(cblThread, ^{
         NSString* dbName = [urlCommand.arguments objectAtIndex:0];
         int batchSize = 5000;
@@ -248,9 +480,20 @@ static NSThread *cblThread;
 
         for(NSArray *batch in idBatches){
             @autoreleasepool{
-                [self processAllDocsBatch:batch withUrlCommand:urlCommand onDatabase:dbName];
+                [self processBatch:batch withUrlCommand:urlCommand onDatabase:dbName];
             }
         }
+
+        [[CXCallDirectoryManager sharedInstance] getEnabledStatusForExtensionWithIdentifier:@"com.jobnimbus.JobNimbus2.CallerID"
+                                                  completionHandler:^(CXCallDirectoryEnabledStatus enabledStatus, NSError * _Nullable error) {
+                                                      if(enabledStatus == CXCallDirectoryEnabledStatusEnabled){
+                                                          [[CXCallDirectoryManager sharedInstance] reloadExtensionWithIdentifier:@"com.jobnimbus.JobNimbus2.CallerID" completionHandler:^(NSError *n) {
+                                                              [extWriter updateLogFiles];
+                                                              if(n != nil){ os_log_debug(cbl_log, "CALLERID : failed to update callerID Extension : CALLERID"); }
+                                                              else { os_log_debug(cbl_log, "CALLERID : trigger directory update"); }
+                                                          }];
+                                                      }
+                                                  }];
 
         CDVPluginResult* finalPluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"complete"];
         [finalPluginResult setKeepCallbackAsBool:NO];
@@ -258,7 +501,7 @@ static NSThread *cblThread;
     });
 }
 
-- (void) processAllDocsBatch:(NSArray *) batch withUrlCommand:(CDVInvokedUrlCommand *) urlCommand onDatabase:(NSString *)dbName {
+- (void) processBatch:(NSArray *) batch withUrlCommand:(CDVInvokedUrlCommand *) urlCommand onDatabase:(NSString *)dbName {
     dispatch_cbl_async(cblThread, ^{
         @autoreleasepool{
             CBLQuery* batchQuery = [dbs[dbName] createAllDocumentsQuery];
@@ -269,22 +512,19 @@ static NSThread *cblThread;
             NSError *queryError;
             CBLQueryEnumerator* batchResults = [batchQuery run: &queryError];
             NSMutableArray *responseBuffer = [[NSMutableArray alloc] init];
+
             for (CBLQueryRow* row in batchResults) {
                 NSError *error;
                 @try{
+                    //TODO read row.doc props send raygun when nil
                     NSData *data = [NSJSONSerialization dataWithJSONObject:row.documentProperties
                                                                    options:0 //or NSJSONWritingPrettyPrinted
                                                                      error:&error];
                     [responseBuffer addObject:[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]];
+                    [extWriter upsertData:row];
                 }
                 @catch(NSException *e){
-                    NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:
-                                          [row documentID], @"id",
-                                          [row documentRevisionID], @"rev",
-                                          [error localizedDescription], @"description",
-                                          [error localizedFailureReason], @"cause",
-                                          nil];
-                    [[Raygun sharedReporter] send:[e reason] withReason:@"iOS failure to serialize doc props" withTags:nil withUserCustomData:dict];
+                    os_log_debug(cbl_log, "failed to read data row");
                 }
             }
 
@@ -361,8 +601,26 @@ static NSThread *cblThread;
 }
 
 #pragma mark WRITE
+- (void)deleteLocal:(CDVInvokedUrlCommand *)urlCommand{
+    dispatch_cbl_async(cblThread, ^{
+        NSString* dbName = [urlCommand.arguments objectAtIndex:0];
+        NSString* docId = [urlCommand.arguments objectAtIndex:1];
+        NSError *error;
+        if(![dbs[dbName] deleteLocalDocumentWithID:docId error:&error]){
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"local delete failure"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
+        else {
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"success"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
+        }
+    });
+}
+
 - (void)putAttachment:(CDVInvokedUrlCommand *)urlCommand{
     dispatch_cbl_async(cblThread, ^{
+        os_activity_t putAttachment_activity = os_activity_create("CBL putAttachment", OS_ACTIVITY_CURRENT,OS_ACTIVITY_FLAG_DEFAULT);
+        os_activity_scope(putAttachment_activity);
         @autoreleasepool{
             NSString* dbName = [urlCommand.arguments objectAtIndex:0];
             NSString* docId = [urlCommand.arguments objectAtIndex:1];
@@ -390,6 +648,7 @@ static NSThread *cblThread;
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
             @catch(NSException *e){
+                [[Raygun sharedReporter] send:e];
                 CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"putAttachment failure"];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
             }
@@ -397,6 +656,7 @@ static NSThread *cblThread;
     });
 }
 
+//returns attachment count for a specific document in the database
 - (void)attachmentCount:(CDVInvokedUrlCommand *) urlCommand {
     dispatch_cbl_async(cblThread, ^{
         @try{
@@ -410,15 +670,11 @@ static NSThread *cblThread;
             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
         @catch(NSException *e){
+            [[Raygun sharedReporter] send:e];
             CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"attachmentCount Exception: %@, Reason:%@", [e name], [e reason]]];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
     });
-}
-
-- (void)uploadLogs:(CDVInvokedUrlCommand *) urlCommand {
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"noop"];
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
 }
 
 - (void)upsert:(CDVInvokedUrlCommand *)urlCommand {
@@ -436,6 +692,8 @@ static NSThread *cblThread;
         if([isLocal isEqualToString:@"local"]){
             NSError * _Nullable __autoreleasing * error2 = NULL;
             [dbs[dbName] putLocalDocument:jsonDictionary withID:docId error: error2];
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"saved local document"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:urlCommand.callbackId];
         }
         else {
             //try to get doc
@@ -520,6 +778,7 @@ static NSThread *cblThread;
 }
 
 - (void)launchCouchbaseLite {
+    cbl_log = os_log_create("com.jobnimbus.JobNimbus2", "CBL");
     cblThread = [[NSThread alloc] initWithTarget: self selector:@selector(cblThreadMain) object:nil];
     [cblThread start];
 
@@ -529,15 +788,15 @@ static NSThread *cblThread;
         if(replications == nil){replications = [NSMutableDictionary dictionary];}
         if(callbacks == nil){callbacks = [NSMutableArray array];}
         if(dbmgr != nil) [dbmgr close];
-        
-        [CBLManager enableLogging: @"SyncVerbose"];
-        [CBLManager enableLogging: @"Database"];
-        [CBLManager enableLogging: @"RemoteRequest"];
-        [CBLManager enableLogging: @"ChangeTracker"];
-        
+        //[CBLManager enableLogging: @"SyncVerbose"];
+        //[CBLManager enableLogging: @"Database"];
+        //[CBLManager enableLogging: @"RemoteRequest"];
+        //[CBLManager enableLogging: @"ChangeTracker"];
         dbmgr = [[CBLManager alloc] init];
     });
 }
+
+
 
 void dispatch_cbl_async(NSThread* thread, dispatch_block_t block)
 {
