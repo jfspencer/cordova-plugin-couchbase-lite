@@ -1,5 +1,5 @@
 # Cordova-Plugin-Couchbase-Lite
-Couchbase Lite Cordova plugin that provides a standard cordova interface instead of relying on the 
+This plugin is capable of transferring over 100k documents to JS control within a reasonable time frame. Couchbase Lite Cordova plugin that provides a standard cordova interface instead of relying on the 
  built in REST Server or another HTTP API layer. The native implementations run on their own
  background thread(iOS)/threads(android) so operations will never block the UI.
  This repo is intentionally not forked from the main
